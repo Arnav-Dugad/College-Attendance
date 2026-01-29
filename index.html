@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>College Attendance Logger</title>
+    <title>Manipal Attendance Pro</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -11,7 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -27,122 +27,201 @@
     <style>
         * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: #08080c; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 2px; }
-        .glass { background: rgba(22, 22, 31, 0.95); border: 1px solid rgba(255,255,255,0.03); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        .glass { background: rgba(22, 22, 31, 0.95); border: 1px solid rgba(255,255,255,0.03); backdrop-filter: blur(10px); }
+        .glass-hover { transition: all 0.2s; }
+        .glass-hover:hover { background: rgba(22, 22, 31, 0.98); border-color: rgba(255,255,255,0.06); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .glow-green { box-shadow: 0 0 12px rgba(16, 185, 129, 0.15); }
         .glow-red { box-shadow: 0 0 12px rgba(239, 68, 68, 0.15); }
-        .cal-cell { transition: all 0.1s; }
+        .cal-cell { transition: all 0.15s ease; cursor: pointer; position: relative; }
+        .cal-cell:hover { transform: scale(1.05); z-index: 10; }
         .cal-cell:active { transform: scale(0.95); }
-        .cal-logged { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.25); }
-        .cal-holiday { background: rgba(239, 68, 68, 0.1); }
-        .cal-event { background: rgba(139, 92, 246, 0.1); }
+        .cal-logged { background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); }
+        .cal-holiday { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.25); }
+        .cal-event { background: rgba(139, 92, 246, 0.12); border-color: rgba(139, 92, 246, 0.25); }
         .cal-sunday { background: rgba(251, 191, 36, 0.08); border-color: rgba(251, 191, 36, 0.2); }
-        .cal-selected { background: rgba(59, 130, 246, 0.2) !important; border-color: rgba(59, 130, 246, 0.4) !important; }
-        .cal-today { box-shadow: inset 0 0 0 1.5px #3b82f6; }
+        .cal-selected { background: rgba(59, 130, 246, 0.25) !important; border-color: rgba(59, 130, 246, 0.5) !important; box-shadow: 0 0 8px rgba(59, 130, 246, 0.3); }
+        .cal-today { box-shadow: inset 0 0 0 2px #3b82f6; }
+        .cal-note::after { content: ''; position: absolute; top: 2px; right: 2px; width: 3px; height: 3px; background: #f59e0b; border-radius: 50%; }
         .status-p { background: linear-gradient(135deg, #10b981, #059669); }
         .status-a { background: linear-gradient(135deg, #ef4444, #dc2626); }
         .status-c { background: linear-gradient(135deg, #4b5563, #374151); }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .saving { animation: pulse 1s infinite; }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
         input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #1e1e2a inset !important; -webkit-text-fill-color: #fff !important; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .btn { transition: all 0.15s; }
-        .btn:active { transform: scale(0.97); }
-        .stat-card { position: relative; overflow: hidden; }
+        .btn:active { transform: scale(0.95); }
+        .stat-card { position: relative; overflow: hidden; transition: all 0.2s; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--glow-color), transparent); }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .progress-ring { transition: stroke-dashoffset 0.5s ease; }
+        .tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(-4px); background: rgba(0,0,0,0.9); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 100; }
+        .has-tooltip:hover .tooltip { opacity: 1; }
+        .heatmap-cell { transition: all 0.2s; }
+        .heatmap-cell:hover { transform: scale(1.1); z-index: 10; }
+        .modal-backdrop { backdrop-filter: blur(4px); animation: fadeIn 0.2s ease; }
+        .modal-content { animation: slideIn 0.3s ease-out; }
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; }
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .badge-danger { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .badge-warning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .badge-info { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        @media print { body { background: white; color: black; } .glass { background: white; border: 1px solid #ddd; } }
+        .floating-action { position: fixed; bottom: 80px; right: 16px; z-index: 30; }
+        .kbd { padding: 2px 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; font-size: 10px; font-family: monospace; }
+        .trend-up::after { content: '↗'; color: #10b981; margin-left: 4px; }
+        .trend-down::after { content: '↘'; color: #ef4444; margin-left: 4px; }
+        .shimmer { background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02) 75%); background-size: 200% 100%; animation: shimmer 2s infinite; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
     </style>
 </head>
 <body class="text-gray-100 min-h-screen">
 
+    <!-- Loading Overlay -->
+    <div id="loading" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 modal-backdrop">
+        <div class="text-center">
+            <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+            <p class="text-sm text-gray-400">Loading...</p>
+        </div>
+    </div>
+
     <!-- AUTH -->
     <div id="auth" class="min-h-screen flex items-center justify-center p-4">
-        <div class="glass rounded-2xl p-6 w-full max-w-xs">
+        <div class="glass rounded-2xl p-6 w-full max-w-xs modal-content">
             <div class="text-center mb-5">
-                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                <div class="w-14 h-14 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                 </div>
-                <h1 class="font-bold text-lg">College Attendance Logger</h1>
-                <p class="text-[11px] text-gray-500 mt-0.5">Batch D2 • Semester Tracker</p>
+                <h1 class="font-bold text-xl">Manipal Attendance Pro</h1>
+                <p class="text-[11px] text-gray-500 mt-1">Batch D2 • Advanced Tracker</p>
             </div>
             
             <div class="flex mb-4 bg-dark-700 rounded-lg p-0.5 text-xs">
-                <button onclick="authTab('login')" id="tabLogin" class="flex-1 py-1.5 rounded-md font-medium bg-blue-500">Login</button>
-                <button onclick="authTab('signup')" id="tabSignup" class="flex-1 py-1.5 rounded-md font-medium text-gray-400">Sign Up</button>
+                <button onclick="authTab('login')" id="tabLogin" class="flex-1 py-2 rounded-md font-medium bg-blue-500 transition-all">Login</button>
+                <button onclick="authTab('signup')" id="tabSignup" class="flex-1 py-2 rounded-md font-medium text-gray-400 transition-all">Sign Up</button>
             </div>
             
-            <form id="formLogin" onsubmit="login(event)" class="space-y-2.5">
-                <input type="email" id="emailL" required class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Email">
-                <input type="password" id="passL" required class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Password">
-                <button class="btn w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-600 font-medium text-sm">Login</button>
+            <form id="formLogin" onsubmit="login(event)" class="space-y-3">
+                <input type="email" id="emailL" required class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="Email">
+                <input type="password" id="passL" required class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="Password">
+                <button class="btn w-full py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-violet-600 font-medium text-sm shadow-lg">Login</button>
             </form>
             
-            <form id="formSignup" onsubmit="signup(event)" class="space-y-2.5 hidden">
-                <input type="text" id="nameS" required class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Name">
-                <input type="email" id="emailS" required class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Email">
-                <input type="password" id="passS" required minlength="6" class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Password (min 6)">
-                <button class="btn w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-600 font-medium text-sm">Create Account</button>
+            <form id="formSignup" onsubmit="signup(event)" class="space-y-3 hidden">
+                <input type="text" id="nameS" required class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="Name">
+                <input type="email" id="emailS" required class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="Email">
+                <input type="password" id="passS" required minlength="6" class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors" placeholder="Password (min 6)">
+                <button class="btn w-full py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-violet-600 font-medium text-sm shadow-lg">Create Account</button>
             </form>
             
-            <p id="authErr" class="text-red-400 text-[11px] mt-2 text-center hidden"></p>
+            <p id="authErr" class="text-red-400 text-[11px] mt-3 text-center hidden"></p>
         </div>
     </div>
 
     <!-- APP -->
-    <div id="app" class="hidden min-h-screen pb-14">
+    <div id="app" class="hidden min-h-screen pb-20">
         
         <!-- Header -->
-        <header class="glass sticky top-0 z-40 px-3 py-2 border-b border-white/5">
+        <header class="glass sticky top-0 z-40 px-3 py-2.5 border-b border-white/5">
             <div class="max-w-lg mx-auto flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-md">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </div>
                     <div class="leading-tight">
-                        <p class="text-sm font-semibold">Attendance Logger</p>
+                        <p class="text-sm font-semibold">Attendance Pro</p>
                         <p class="text-[10px] text-gray-500" id="hdrUser"></p>
                     </div>
                 </div>
                 <div class="flex gap-1">
-                    <button onclick="openSettings()" class="p-1.5 rounded-lg hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></button>
-                    <button onclick="openCal()" class="p-1.5 rounded-lg hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></button>
-                    <button onclick="logout()" class="p-1.5 rounded-lg hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg></button>
+                    <button onclick="openCalculator()" class="p-1.5 rounded-lg hover:bg-dark-600 btn has-tooltip" title="Calculator">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        <span class="tooltip">Calculator</span>
+                    </button>
+                    <button onclick="openSettings()" class="p-1.5 rounded-lg hover:bg-dark-600 btn has-tooltip" title="Settings">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        <span class="tooltip">Settings</span>
+                    </button>
+                    <button onclick="openCal()" class="p-1.5 rounded-lg hover:bg-dark-600 btn has-tooltip" title="Events">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <span class="tooltip">Calendar Events</span>
+                    </button>
+                    <button onclick="logout()" class="p-1.5 rounded-lg hover:bg-dark-600 btn has-tooltip" title="Logout">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        <span class="tooltip">Logout</span>
+                    </button>
                 </div>
             </div>
         </header>
         
         <main class="max-w-lg mx-auto p-3 space-y-3">
             
-            <!-- Stats -->
-            <div class="grid grid-cols-4 gap-2">
-                <div class="stat-card glass rounded-xl p-2 text-center" style="--glow-color: #3b82f6">
-                    <p class="text-base font-bold text-blue-400" id="sO">-</p>
-                    <p class="text-[9px] text-gray-500">Overall</p>
-                </div>
-                <div class="stat-card glass rounded-xl p-2 text-center" style="--glow-color: #10b981">
-                    <p class="text-base font-bold text-emerald-400" id="sA">-</p>
-                    <p class="text-[9px] text-gray-500">Attended</p>
-                </div>
-                <div class="stat-card glass rounded-xl p-2 text-center" style="--glow-color: #f59e0b">
-                    <p class="text-base font-bold text-amber-400" id="sH">-</p>
-                    <p class="text-[9px] text-gray-500">Held</p>
-                </div>
-                <div class="stat-card glass rounded-xl p-2 text-center" style="--glow-color: #8b5cf6">
-                    <p class="text-base font-bold text-violet-400" id="sS">-</p>
-                    <p class="text-[9px] text-gray-500">Semester</p>
+            <!-- Quick Actions -->
+            <div class="glass rounded-xl p-2.5 slide-in">
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button onclick="goToday()" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 btn text-center">
+                        <svg class="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        <span class="text-[9px]">Today</span>
+                    </button>
+                    <button onclick="showBulk()" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 btn text-center">
+                        <svg class="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                        <span class="text-[9px]">Bulk</span>
+                    </button>
+                    <button onclick="openHeatmap()" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 btn text-center">
+                        <svg class="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        <span class="text-[9px]">Heatmap</span>
+                    </button>
+                    <button onclick="openExport()" class="p-2 rounded-lg bg-dark-700 hover:bg-dark-600 btn text-center">
+                        <svg class="w-4 h-4 mx-auto mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span class="text-[9px]">Export</span>
+                    </button>
                 </div>
             </div>
 
+            <!-- Stats -->
+            <div class="grid grid-cols-4 gap-2">
+                <div class="stat-card glass rounded-xl p-2.5 text-center" style="--glow-color: #3b82f6">
+                    <p class="text-lg font-bold text-blue-400" id="sO">-</p>
+                    <p class="text-[9px] text-gray-500">Overall</p>
+                </div>
+                <div class="stat-card glass rounded-xl p-2.5 text-center" style="--glow-color: #10b981">
+                    <p class="text-lg font-bold text-emerald-400" id="sA">-</p>
+                    <p class="text-[9px] text-gray-500">Attended</p>
+                </div>
+                <div class="stat-card glass rounded-xl p-2.5 text-center" style="--glow-color: #f59e0b">
+                    <p class="text-lg font-bold text-amber-400" id="sH">-</p>
+                    <p class="text-[9px] text-gray-500">Held</p>
+                </div>
+                <div class="stat-card glass rounded-xl p-2.5 text-center" style="--glow-color: #8b5cf6">
+                    <p class="text-lg font-bold text-violet-400" id="sS">-</p>
+                    <p class="text-[9px] text-gray-500">Progress</p>
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div id="alertsBox" class="hidden"></div>
+
             <!-- Enhanced Stats -->
-            <div class="glass rounded-xl p-3">
+            <div class="glass rounded-xl p-3 glass-hover">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-xs font-semibold">📊 Insights</h3>
-                    <button onclick="toggleInsights()" class="text-[10px] text-blue-400" id="insightsToggle">Show</button>
+                    <h3 class="text-xs font-semibold flex items-center gap-1">
+                        📊 Insights
+                        <span class="badge badge-info">Live</span>
+                    </h3>
+                    <button onclick="toggleInsights()" class="text-[10px] text-blue-400 btn" id="insightsToggle">Show</button>
                 </div>
                 <div id="insightsBox" class="hidden space-y-2">
                     <div class="grid grid-cols-2 gap-2">
                         <div class="bg-dark-700 rounded-lg p-2">
-                            <p class="text-[9px] text-gray-500 mb-0.5">Streak</p>
+                            <p class="text-[9px] text-gray-500 mb-0.5">Current Streak</p>
                             <p class="text-sm font-bold text-emerald-400" id="iStreak">-</p>
                         </div>
                         <div class="bg-dark-700 rounded-lg p-2">
@@ -150,7 +229,7 @@
                             <p class="text-sm font-bold text-blue-400" id="iWorkDays">-</p>
                         </div>
                         <div class="bg-dark-700 rounded-lg p-2">
-                            <p class="text-[9px] text-gray-500 mb-0.5">Days Left</p>
+                            <p class="text-[9px] text-gray-500 mb-0.5">Days Remaining</p>
                             <p class="text-sm font-bold text-violet-400" id="iDaysLeft">-</p>
                         </div>
                         <div class="bg-dark-700 rounded-lg p-2">
@@ -166,43 +245,64 @@
                         <p class="text-[9px] text-gray-500 mb-1">This Week Summary</p>
                         <div id="iWeek" class="text-[10px]"></div>
                     </div>
+                    <div class="bg-dark-700 rounded-lg p-2">
+                        <p class="text-[9px] text-gray-500 mb-1">Attendance by Day</p>
+                        <div id="iByDay" class="text-[10px]"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- Calendar -->
-            <div class="glass rounded-xl p-3">
+            <div class="glass rounded-xl p-3 glass-hover">
                 <div class="flex items-center justify-between mb-2">
-                    <button onclick="chgMonth(-1)" class="p-1 rounded hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
+                    <button onclick="chgMonth(-1)" class="p-1.5 rounded-lg hover:bg-dark-600 btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
                     <span class="text-xs font-semibold" id="calTitle"></span>
-                    <button onclick="chgMonth(1)" class="p-1 rounded hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
+                    <button onclick="chgMonth(1)" class="p-1.5 rounded-lg hover:bg-dark-600 btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </button>
                 </div>
-                <div class="grid grid-cols-7 gap-0.5 text-center text-[9px] text-gray-500 mb-1">
-                    <span class="text-amber-400">S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                <div class="grid grid-cols-7 gap-0.5 text-center text-[9px] text-gray-500 mb-1.5">
+                    <span class="text-amber-400 font-semibold">S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                 </div>
-                <div id="calGrid" class="grid grid-cols-7 gap-0.5"></div>
+                <div id="calGrid" class="grid grid-cols-7 gap-0.5 mb-2"></div>
+                <div class="flex flex-wrap gap-2 text-[9px] text-gray-500">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-emerald-500/20 border border-emerald-500/30"></span>Logged</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-500/20 border border-red-500/30"></span>Holiday</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-500/20 border border-amber-500/30"></span>Sunday</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-violet-500/20 border border-violet-500/30"></span>Event</span>
+                </div>
             </div>
 
             <!-- Day Editor -->
-            <div class="glass rounded-xl p-3">
+            <div class="glass rounded-xl p-3 glass-hover">
                 <div class="flex items-center justify-between mb-2">
                     <div>
                         <h3 class="text-sm font-semibold" id="dayTitle">-</h3>
                         <p class="text-[10px] text-gray-500" id="daySub"></p>
                     </div>
-                    <button onclick="openAddClass()" id="btnAdd" class="hidden p-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 btn" title="Add Class">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    </button>
+                    <div class="flex gap-1">
+                        <button onclick="openNotes()" id="btnNotes" class="hidden p-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 btn" title="Add Note">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        </button>
+                        <button onclick="openAddClass()" id="btnAdd" class="hidden p-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 btn" title="Add Class">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                        </button>
+                    </div>
                 </div>
+                
+                <div id="dayNote" class="hidden mb-2 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg text-[10px] text-amber-200"></div>
                 
                 <div id="dayList" class="space-y-1.5"></div>
                 
                 <div id="dayEmpty" class="hidden text-center py-4">
-                    <p class="text-xl mb-1">🎉</p>
+                    <p class="text-2xl mb-1">🎉</p>
                     <p class="text-[10px] text-gray-500" id="emptyReason">No classes</p>
                 </div>
                 
-                <button id="btnSave" onclick="saveDay()" class="hidden w-full mt-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-600 text-xs font-medium btn">
-                    Save
+                <button id="btnSave" onclick="saveDay()" class="hidden w-full mt-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-600 text-xs font-medium btn shadow-lg">
+                    Save Changes
                 </button>
             </div>
 
@@ -211,65 +311,154 @@
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-xs font-semibold">Subjects</h3>
                     <div class="flex gap-2">
-                        <button onclick="toggleSubj()" class="text-[10px] text-blue-400" id="subjToggle">Details</button>
+                        <select id="subjSort" onchange="renderSubj()" class="text-[10px] px-2 py-1 bg-dark-700 border border-dark-600 rounded">
+                            <option value="default">Default</option>
+                            <option value="pct">By Percentage</option>
+                            <option value="name">By Name</option>
+                            <option value="classes">By Classes</option>
+                        </select>
+                        <button onclick="toggleSubj()" class="text-[10px] text-blue-400 btn" id="subjToggle">Details</button>
                     </div>
                 </div>
                 <div id="subjGrid" class="grid grid-cols-2 gap-1.5"></div>
             </div>
 
             <!-- Predictions -->
-            <div class="glass rounded-xl p-3">
+            <div class="glass rounded-xl p-3 glass-hover">
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-xs font-semibold">🔮 Predictions</h3>
-                    <button onclick="togglePred()" class="text-[10px] text-blue-400" id="predToggle">Show</button>
+                    <h3 class="text-xs font-semibold flex items-center gap-1">
+                        🔮 Predictions & Forecast
+                    </h3>
+                    <button onclick="togglePred()" class="text-[10px] text-blue-400 btn" id="predToggle">Show</button>
                 </div>
                 <div id="predBox" class="hidden space-y-2">
-                    <p class="text-[10px] text-gray-500">If you attend next 5/10 classes:</p>
+                    <p class="text-[10px] text-gray-500">Projected attendance after attending next classes:</p>
                     <div id="predList" class="space-y-1.5"></div>
                 </div>
             </div>
 
+            <!-- Trends -->
+            <div class="glass rounded-xl p-3 glass-hover">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-semibold">📈 Trends & Analytics</h3>
+                    <button onclick="toggleTrends()" class="text-[10px] text-blue-400 btn" id="trendsToggle">Show</button>
+                </div>
+                <div id="trendsBox" class="hidden space-y-2">
+                    <div id="trendsList"></div>
+                </div>
+            </div>
+
             <!-- Bulk -->
-            <div class="glass rounded-xl p-3">
+            <div class="glass rounded-xl p-3 glass-hover">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xs font-semibold">Quick Bulk Entry</h3>
-                    <button onclick="toggleBulk()" class="text-[10px] text-blue-400" id="bulkToggle">Show</button>
+                    <button onclick="toggleBulk()" class="text-[10px] text-blue-400 btn" id="bulkToggle">Show</button>
                 </div>
-                <div id="bulkBox" class="hidden mt-2">
-                    <p class="text-[10px] text-gray-500 mb-2">Unlogged days (last 30):</p>
-                    <div id="bulkList" class="flex flex-wrap gap-1 mb-2 max-h-24 overflow-y-auto hide-scroll"></div>
-                    <button onclick="bulkSave()" class="w-full py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-[10px] font-medium btn hover:bg-emerald-500/30">✓ Mark All Present</button>
+                <div id="bulkBox" class="hidden mt-2 space-y-2">
+                    <p class="text-[10px] text-gray-500">Unlogged days (last 30):</p>
+                    <div id="bulkList" class="flex flex-wrap gap-1 max-h-24 overflow-y-auto hide-scroll"></div>
+                    <div class="flex gap-2">
+                        <button onclick="bulkSave()" class="flex-1 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-[10px] font-medium btn hover:bg-emerald-500/30">✓ Mark All Present</button>
+                        <button onclick="bulkAbsent()" class="flex-1 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-[10px] font-medium btn hover:bg-red-500/30">✗ Mark All Absent</button>
+                    </div>
                 </div>
             </div>
             
+            <!-- Keyboard Shortcuts -->
+            <div class="glass rounded-xl p-3 glass-hover">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-semibold">⌨️ Keyboard Shortcuts</h3>
+                    <button onclick="toggleShortcuts()" class="text-[10px] text-blue-400 btn" id="shortcutsToggle">Show</button>
+                </div>
+                <div id="shortcutsBox" class="hidden space-y-1.5 text-[10px]">
+                    <div class="flex justify-between"><span><span class="kbd">T</span> Go to today</span></div>
+                    <div class="flex justify-between"><span><span class="kbd">C</span> Open calculator</span></div>
+                    <div class="flex justify-between"><span><span class="kbd">E</span> Open events</span></div>
+                    <div class="flex justify-between"><span><span class="kbd">S</span> Open settings</span></div>
+                    <div class="flex justify-between"><span><span class="kbd">H</span> Open heatmap</span></div>
+                    <div class="flex justify-between"><span><span class="kbd">←/→</span> Change month</span></div>
+                    <div class="flex justify-between"><span><span class="kbd">Esc</span> Close modals</span></div>
+                </div>
+            </div>
         </main>
 
-        <!-- Nav -->
-        <nav class="fixed bottom-0 inset-x-0 glass border-t border-white/5">
-            <div class="max-w-lg mx-auto flex justify-around py-1.5">
-                <button onclick="goToday()" class="flex flex-col items-center p-1 text-blue-400 btn">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span class="text-[9px]">Today</span>
-                </button>
-                <button onclick="showBulk()" class="flex flex-col items-center p-1 text-gray-400 hover:text-white btn">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                    <span class="text-[9px]">Bulk</span>
-                </button>
-                <button onclick="openExport()" class="flex flex-col items-center p-1 text-gray-400 hover:text-white btn">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                    <span class="text-[9px]">Export</span>
-                </button>
-                <button onclick="openReset()" class="flex flex-col items-center p-1 text-gray-400 hover:text-white btn">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    <span class="text-[9px]">Reset</span>
-                </button>
+        <!-- Floating Save Indicator -->
+        <div id="saveIndicator" class="hidden fixed top-16 right-4 z-30 px-3 py-2 rounded-lg bg-emerald-500 text-white text-[10px] shadow-lg">
+            ✓ Saved
+        </div>
+    </div>
+
+    <!-- MODALS (keeping all existing modals and adding new ones) -->
+    
+    <!-- CALCULATOR MODAL -->
+    <div id="modalCalc" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 modal-backdrop p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm modal-content">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold">🧮 Attendance Calculator</h3>
+                <button onclick="closeCalculator()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
-        </nav>
+            
+            <div class="space-y-3">
+                <div class="bg-dark-700 rounded-lg p-3">
+                    <p class="text-[10px] text-gray-500 mb-2">Calculate classes needed for target %</p>
+                    <select id="calcSubj" class="w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] mb-2">
+                        <option value="">Select Subject</option>
+                    </select>
+                    <input type="number" id="calcTarget" placeholder="Target %" class="w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] mb-2" value="75">
+                    <button onclick="calculate()" class="w-full py-1.5 rounded bg-blue-500 text-[10px] font-medium btn">Calculate</button>
+                    <div id="calcResult" class="mt-2 text-[10px] hidden"></div>
+                </div>
+
+                <div class="bg-dark-700 rounded-lg p-3">
+                    <p class="text-[10px] text-gray-500 mb-2">How many can I bunk?</p>
+                    <div id="bunkCalc"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HEATMAP MODAL -->
+    <div id="modalHeatmap" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 modal-backdrop p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-md max-h-[80vh] overflow-y-auto modal-content">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold">🔥 Attendance Heatmap</h3>
+                <button onclick="closeHeatmap()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <p class="text-[10px] text-gray-500 mb-3">Last 12 weeks attendance pattern</p>
+            <div id="heatmapGrid"></div>
+            <div class="flex justify-between mt-2 text-[9px] text-gray-500">
+                <span>Less</span>
+                <div class="flex gap-1">
+                    <span class="w-3 h-3 rounded bg-gray-700"></span>
+                    <span class="w-3 h-3 rounded bg-red-500/30"></span>
+                    <span class="w-3 h-3 rounded bg-amber-500/50"></span>
+                    <span class="w-3 h-3 rounded bg-emerald-500/70"></span>
+                    <span class="w-3 h-3 rounded bg-emerald-500"></span>
+                </div>
+                <span>More</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTES MODAL -->
+    <div id="modalNotes" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 modal-backdrop p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm modal-content">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold">📝 Add Note</h3>
+                <button onclick="closeNotes()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <p class="text-[10px] text-gray-500 mb-2" id="noteDate">-</p>
+            <textarea id="noteText" class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500 resize-none" rows="4" placeholder="Add a note for this day..."></textarea>
+            <div class="flex gap-2 mt-3">
+                <button onclick="deleteNote()" class="flex-1 py-2 rounded-lg bg-red-500/20 text-red-400 text-xs btn">Delete</button>
+                <button onclick="saveNote()" class="flex-1 py-2 rounded-lg bg-blue-500 text-xs font-medium btn">Save Note</button>
+            </div>
+        </div>
     </div>
 
     <!-- SUBJECT DETAIL MODAL -->
-    <div id="modalSubj" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-3">
-        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+    <div id="modalSubj" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 modal-backdrop p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto modal-content">
             <div class="flex items-center justify-between mb-3">
                 <div>
                     <h3 class="text-sm font-semibold" id="subjDetTitle">-</h3>
@@ -311,21 +500,21 @@
     </div>
 
     <!-- ADD CLASS MODAL -->
-    <div id="modalAdd" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-3">
-        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[70vh] overflow-y-auto">
+    <div id="modalAdd" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 modal-backdrop p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[70vh] overflow-y-auto modal-content">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold">Add / Edit Classes</h3>
                 <button onclick="closeAddClass()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
             <p class="text-[10px] text-gray-500 mb-3">Tap + to add a class. Tap multiple times for extra classes of the same subject.</p>
             <div id="addList" class="space-y-1.5"></div>
-            <button onclick="applyAdd()" class="w-full mt-3 py-2 rounded-lg bg-blue-500 text-xs font-medium btn">Apply</button>
+            <button onclick="applyAdd()" class="w-full mt-3 py-2 rounded-lg bg-blue-500 text-xs font-medium btn shadow-lg">Apply Changes</button>
         </div>
     </div>
 
     <!-- CALENDAR EVENTS MODAL -->
-    <div id="modalCal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-3">
-        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+    <div id="modalCal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 modal-backdrop p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto modal-content">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold">📅 Calendar Events</h3>
                 <button onclick="closeCal()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -342,7 +531,7 @@
                         <option value="halfday">Half Day</option>
                     </select>
                 </div>
-                <input type="text" id="evName" placeholder="Name" class="w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] mb-2 focus:outline-none focus:border-blue-500">
+                <input type="text" id="evName" placeholder="Event Name" class="w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] mb-2 focus:outline-none focus:border-blue-500">
                 <select id="evFollow" class="hidden w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] mb-2 focus:outline-none focus:border-blue-500">
                     <option value="0">Follows Sunday</option><option value="1">Follows Monday</option><option value="2">Follows Tuesday</option>
                     <option value="3">Follows Wednesday</option><option value="4">Follows Thursday</option><option value="5">Follows Friday</option><option value="6">Follows Saturday</option>
@@ -356,8 +545,8 @@
     </div>
 
     <!-- SETTINGS MODAL -->
-    <div id="modalSettings" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-3">
-        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+    <div id="modalSettings" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 modal-backdrop p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto modal-content">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold">⚙️ Settings</h3>
                 <button onclick="closeSettings()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -378,7 +567,7 @@
                 <button onclick="saveSemDates()" class="w-full mt-2 py-1.5 rounded bg-blue-500 text-[10px] font-medium btn">Save Dates</button>
             </div>
 
-            <div class="bg-dark-700 rounded-lg p-3">
+            <div class="bg-dark-700 rounded-lg p-3 mb-3">
                 <p class="text-[10px] font-medium mb-1">Semester Info</p>
                 <div class="space-y-1 text-[10px]">
                     <div class="flex justify-between">
@@ -399,12 +588,18 @@
                     </div>
                 </div>
             </div>
+
+            <div class="bg-dark-700 rounded-lg p-3">
+                <p class="text-[10px] font-medium mb-2">Backup & Data</p>
+                <button onclick="backupData()" class="w-full py-1.5 rounded bg-dark-600 hover:bg-dark-500 text-[10px] mb-2 btn">📦 Backup All Data</button>
+                <button onclick="openReset()" class="w-full py-1.5 rounded bg-red-500/20 text-red-400 text-[10px] btn">⚠️ Reset Attendance</button>
+            </div>
         </div>
     </div>
 
     <!-- EXPORT MODAL -->
-    <div id="modalExport" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3">
-        <div class="glass rounded-2xl p-4 w-full max-w-xs">
+    <div id="modalExport" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 modal-backdrop p-3">
+        <div class="glass rounded-2xl p-4 w-full max-w-xs modal-content">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold">📥 Export Data</h3>
                 <button onclick="closeExport()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
@@ -412,15 +607,17 @@
             <div class="space-y-2">
                 <button onclick="exportCSV()" class="w-full py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs btn">📊 Export as CSV</button>
                 <button onclick="exportReport()" class="w-full py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs btn">📄 Generate Report</button>
+                <button onclick="exportDetailed()" class="w-full py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs btn">📋 Detailed Export</button>
+                <button onclick="printReport()" class="w-full py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs btn">🖨️ Print Report</button>
             </div>
         </div>
     </div>
 
     <!-- RESET MODAL -->
-    <div id="modalReset" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3">
-        <div class="glass rounded-2xl p-4 w-full max-w-xs">
-            <h3 class="text-sm font-semibold text-red-400 mb-2">⚠️ Reset All?</h3>
-            <p class="text-[10px] text-gray-500 mb-3">Deletes all attendance logs. Calendar events and semester dates are kept.</p>
+    <div id="modalReset" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 modal-backdrop p-3">
+        <div class="glass rounded-2xl p-4 w-full max-w-xs modal-content">
+            <h3 class="text-sm font-semibold text-red-400 mb-2">⚠️ Reset All Attendance?</h3>
+            <p class="text-[10px] text-gray-500 mb-3">This will delete all attendance logs. Calendar events, notes, and semester dates will be kept. This action cannot be undone.</p>
             <div class="flex gap-2">
                 <button onclick="closeReset()" class="flex-1 py-2 rounded-lg bg-dark-600 text-xs btn">Cancel</button>
                 <button onclick="doReset()" class="flex-1 py-2 rounded-lg bg-red-500 text-xs font-medium btn">Reset</button>
@@ -429,7 +626,7 @@
     </div>
 
     <!-- TOAST -->
-    <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-dark-600 text-[11px] shadow-xl transform translate-y-8 opacity-0 transition-all z-50"></div>
+    <div id="toast" class="fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-dark-600 text-[11px] shadow-xl transform translate-y-8 opacity-0 transition-all z-50 border border-white/10"></div>
 
     <script>
         // =====================================================================
@@ -469,10 +666,11 @@
         // =====================================================================
         // STATE
         // =====================================================================
-        let user = null, data = { att: {}, logs: {}, cal: {}, semStart: null, semEnd: null };
+        let user = null, data = { att: {}, logs: {}, cal: {}, semStart: null, semEnd: null, notes: {} };
         let selDate = null, selClasses = [];
         let curMonth = new Date(), subjExp = false, dirty = false, bulkSet = new Set();
         let tempClasses = [];
+        let undoStack = [];
 
         // =====================================================================
         // UTILS
@@ -481,7 +679,10 @@
         const fromId = s => new Date(s + 'T00:00:00');
         const today = () => toId(new Date());
         const short = s => fromId(s).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        const toast = m => { const t = document.getElementById('toast'); t.textContent = m; t.classList.remove('translate-y-8', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-8', 'opacity-0'), 2000); };
+        const toast = m => { const t = document.getElementById('toast'); t.textContent = m; t.classList.remove('translate-y-8', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-8', 'opacity-0'), 2500); };
+        const showLoading = () => document.getElementById('loading').classList.remove('hidden');
+        const hideLoading = () => document.getElementById('loading').classList.add('hidden');
+        const showSaveIndicator = () => { const s = document.getElementById('saveIndicator'); s.classList.remove('hidden'); setTimeout(() => s.classList.add('hidden'), 1500); };
 
         // =====================================================================
         // AUTH
@@ -489,36 +690,41 @@
         function authTab(t) {
             document.getElementById('formLogin').classList.toggle('hidden', t !== 'login');
             document.getElementById('formSignup').classList.toggle('hidden', t !== 'signup');
-            document.getElementById('tabLogin').className = `flex-1 py-1.5 rounded-md font-medium ${t === 'login' ? 'bg-blue-500' : 'text-gray-400'}`;
-            document.getElementById('tabSignup').className = `flex-1 py-1.5 rounded-md font-medium ${t === 'signup' ? 'bg-blue-500' : 'text-gray-400'}`;
+            document.getElementById('tabLogin').className = `flex-1 py-2 rounded-md font-medium transition-all ${t === 'login' ? 'bg-blue-500' : 'text-gray-400'}`;
+            document.getElementById('tabSignup').className = `flex-1 py-2 rounded-md font-medium transition-all ${t === 'signup' ? 'bg-blue-500' : 'text-gray-400'}`;
             document.getElementById('authErr').classList.add('hidden');
         }
         const authErr = m => { const e = document.getElementById('authErr'); e.textContent = m.replace(/Firebase: |( \(auth.*\))/g, ''); e.classList.remove('hidden'); };
         
         async function login(e) {
             e.preventDefault();
+            showLoading();
             try { await auth.signInWithEmailAndPassword(document.getElementById('emailL').value, document.getElementById('passL').value); }
-            catch (err) { authErr(err.message); }
+            catch (err) { authErr(err.message); hideLoading(); }
         }
         async function signup(e) {
             e.preventDefault();
+            showLoading();
             try {
                 const c = await auth.createUserWithEmailAndPassword(document.getElementById('emailS').value, document.getElementById('passS').value);
                 await c.user.updateProfile({ displayName: document.getElementById('nameS').value });
                 await initUser(c.user);
-            } catch (err) { authErr(err.message); }
+            } catch (err) { authErr(err.message); hideLoading(); }
         }
         const logout = async () => { await auth.signOut(); toast('Signed out'); };
         
         auth.onAuthStateChanged(async u => {
             if (u) {
                 user = u;
+                showLoading();
                 document.getElementById('auth').classList.add('hidden');
                 document.getElementById('app').classList.remove('hidden');
                 document.getElementById('hdrUser').textContent = u.displayName || u.email?.split('@')[0];
                 await loadData();
                 selectDay(today());
                 render();
+                hideLoading();
+                checkAlerts();
             } else {
                 user = null;
                 document.getElementById('auth').classList.remove('hidden');
@@ -538,6 +744,7 @@
                 cal: { ...CAL_DEFAULT },
                 semStart: null,
                 semEnd: null,
+                notes: {},
                 created: firebase.firestore.FieldValue.serverTimestamp() 
             });
         }
@@ -550,16 +757,21 @@
             if (!data.att) { data.att = {}; SUBJECTS.forEach(s => data.att[s] = { a: 0, h: 0 }); }
             if (!data.semStart) data.semStart = null;
             if (!data.semEnd) data.semEnd = null;
+            if (!data.notes) data.notes = {};
             const logs = await db.collection('att_users').doc(user.uid).collection('logs').get();
             data.logs = {}; logs.forEach(d => data.logs[d.id] = d.data());
         }
         
-        const saveData = () => db.collection('att_users').doc(user.uid).update({ 
-            att: data.att, 
-            cal: data.cal,
-            semStart: data.semStart,
-            semEnd: data.semEnd
-        });
+        const saveData = async () => {
+            await db.collection('att_users').doc(user.uid).update({ 
+                att: data.att, 
+                cal: data.cal,
+                semStart: data.semStart,
+                semEnd: data.semEnd,
+                notes: data.notes
+            });
+            showSaveIndicator();
+        };
         const saveLog = async (id, log) => { await db.collection('att_users').doc(user.uid).collection('logs').doc(id).set(log); data.logs[id] = log; };
         
         function recalc() {
@@ -587,13 +799,42 @@
         }
 
         // =====================================================================
+        // ALERTS
+        // =====================================================================
+        function checkAlerts() {
+            const alerts = [];
+            SUBJECTS.forEach(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                if (d.h === 0) return;
+                const pct = d.a / d.h * 100;
+                if (pct < 70) alerts.push({ type: 'danger', msg: `${s} is at ${Math.round(pct)}% - Critical!` });
+                else if (pct < 75) alerts.push({ type: 'warning', msg: `${s} is at ${Math.round(pct)}% - Be careful` });
+            });
+            
+            const box = document.getElementById('alertsBox');
+            if (alerts.length) {
+                box.innerHTML = alerts.map(a => `
+                    <div class="glass rounded-lg p-2.5 mb-2 border ${a.type === 'danger' ? 'border-red-500/30' : 'border-amber-500/30'} slide-in">
+                        <div class="flex items-start gap-2">
+                            <span class="text-lg">${a.type === 'danger' ? '⚠️' : '⚡'}</span>
+                            <p class="text-[10px] ${a.type === 'danger' ? 'text-red-400' : 'text-amber-400'}">${a.msg}</p>
+                        </div>
+                    </div>
+                `).join('');
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        // =====================================================================
         // RENDER
         // =====================================================================
-        function render() { renderCal(); renderStats(); renderSubj(); renderInsights(); updateBulk(); }
+        function render() { renderCal(); renderStats(); renderSubj(); renderInsights(); updateBulk(); checkAlerts(); }
         
         function renderCal() {
             const g = document.getElementById('calGrid'), y = curMonth.getFullYear(), m = curMonth.getMonth();
-            document.getElementById('calTitle').textContent = curMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            document.getElementById('calTitle').textContent = curMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
             const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate(), tid = today();
             let h = ''; 
             for (let i = 0; i < first; i++) h += '<div></div>';
@@ -601,13 +842,15 @@
                 const id = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const ev = data.cal[id], logged = data.logs[id], isToday = id === tid, isSel = id === selDate, isFut = id > tid;
                 const isSunday = fromId(id).getDay() === 0;
-                let c = 'cal-cell h-7 rounded text-[10px] flex items-center justify-center cursor-pointer border border-transparent';
+                const hasNote = data.notes && data.notes[id];
+                let c = 'cal-cell h-8 rounded text-[10px] font-medium flex items-center justify-center border border-transparent';
                 if (isToday) c += ' cal-today';
                 if (isSel) c += ' cal-selected';
                 else if (logged) c += ' cal-logged';
                 else if (ev?.type === 'holiday' || ev?.type === 'exam') c += ' cal-holiday';
                 else if (ev) c += ' cal-event';
                 else if (isSunday) c += ' cal-sunday';
+                if (hasNote) c += ' cal-note';
                 if (isFut) c += ' text-gray-600';
                 h += `<div class="${c}" onclick="selectDay('${id}')">${d}</div>`;
             }
@@ -625,7 +868,22 @@
         
         function renderSubj() {
             const g = document.getElementById('subjGrid');
-            g.innerHTML = SUBJECTS.map(s => {
+            const sortBy = document.getElementById('subjSort')?.value || 'default';
+            let sorted = [...SUBJECTS];
+            
+            if (sortBy === 'pct') {
+                sorted.sort((a, b) => {
+                    const pctA = data.att[a]?.h ? data.att[a].a / data.att[a].h : 1;
+                    const pctB = data.att[b]?.h ? data.att[b].a / data.att[b].h : 1;
+                    return pctA - pctB;
+                });
+            } else if (sortBy === 'name') {
+                sorted.sort();
+            } else if (sortBy === 'classes') {
+                sorted.sort((a, b) => (data.att[b]?.h || 0) - (data.att[a]?.h || 0));
+            }
+            
+            g.innerHTML = sorted.map(s => {
                 const d = data.att[s] || { a: 0, h: 0 }, pct = d.h ? d.a / d.h * 100 : 100, isLab = LABS.includes(s);
                 let status, stCls;
                 if (pct >= 75) { const b = Math.floor((d.a - 0.75 * d.h) / 0.75); status = b > 0 ? `+${b}` : '0'; stCls = 'text-emerald-400'; }
@@ -634,13 +892,16 @@
                 const prog = pct >= 75 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500';
                 
                 if (!subjExp) return `
-                    <div class="glass rounded-lg p-2 border ${border} cursor-pointer hover:bg-dark-600" onclick="openSubjDet('${s}')">
+                    <div class="glass glass-hover rounded-lg p-2 border ${border} cursor-pointer" onclick="openSubjDet('${s}')">
                         <div class="flex justify-between items-center mb-1">
-                            <span class="text-[11px] font-medium">${s}</span>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[11px] font-semibold">${s}</span>
+                                ${isLab ? '<span class="badge" style="background: rgba(139, 92, 246, 0.2); color: #a78bfa; font-size: 7px;">LAB</span>' : ''}
+                            </div>
                             <span class="text-[11px] font-bold ${pct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${Math.round(pct)}%</span>
                         </div>
-                        <div class="h-1 bg-dark-600 rounded-full overflow-hidden mb-1">
-                            <div class="${prog} h-full" style="width:${Math.min(pct,100)}%"></div>
+                        <div class="relative h-1 bg-dark-600 rounded-full overflow-hidden mb-1">
+                            <div class="${prog} h-full transition-all" style="width:${Math.min(pct,100)}%"></div>
                         </div>
                         <div class="flex justify-between text-[9px] text-gray-500">
                             <span>${d.a}/${d.h}</span>
@@ -649,17 +910,19 @@
                     </div>`;
                 
                 return `
-                    <div class="glass rounded-lg p-2.5 border ${border} cursor-pointer hover:bg-dark-600" onclick="openSubjDet('${s}')">
+                    <div class="glass glass-hover rounded-lg p-2.5 border ${border} cursor-pointer" onclick="openSubjDet('${s}')">
                         <div class="flex justify-between items-start mb-1.5">
                             <div>
-                                <span class="text-xs font-semibold">${s}</span>
-                                <span class="text-[8px] ml-1 px-1 py-px rounded ${isLab ? 'bg-violet-500/20 text-violet-300' : 'bg-blue-500/20 text-blue-300'}">${isLab ? 'LAB' : 'LEC'}</span>
-                                <p class="text-[9px] text-gray-500 mt-0.5">${NAMES[s]}</p>
+                                <div class="flex items-center gap-1 mb-0.5">
+                                    <span class="text-xs font-semibold">${s}</span>
+                                    <span class="text-[7px] px-1 py-px rounded ${isLab ? 'bg-violet-500/20 text-violet-300' : 'bg-blue-500/20 text-blue-300'}">${isLab ? 'LAB' : 'LEC'}</span>
+                                </div>
+                                <p class="text-[9px] text-gray-500">${NAMES[s]}</p>
                             </div>
                             <span class="text-lg font-bold ${pct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${Math.round(pct)}%</span>
                         </div>
                         <div class="relative h-1 bg-dark-600 rounded-full overflow-hidden mb-1.5">
-                            <div class="${prog} h-full" style="width:${Math.min(pct,100)}%"></div>
+                            <div class="${prog} h-full transition-all" style="width:${Math.min(pct,100)}%"></div>
                             <div class="absolute h-full w-px bg-white/20" style="left:75%"></div>
                         </div>
                         <div class="flex justify-between text-[9px]">
@@ -683,7 +946,7 @@
                 const allP = log.classes.every(c => c.status === 'P');
                 if (allP) streak++; else break;
             }
-            document.getElementById('iStreak').textContent = `${streak} days`;
+            document.getElementById('iStreak').textContent = `${streak} ${streak === 1 ? 'day' : 'days'}`;
 
             // Working days
             const workDays = Object.keys(data.logs).filter(id => {
@@ -719,9 +982,9 @@
                 ? critical.map(s => {
                     const d = data.att[s];
                     const pct = Math.round(d.a / d.h * 100);
-                    return `<span class="text-red-400">${s}</span> (${pct}%)`;
-                }).join(', ')
-                : '<span class="text-emerald-400">All subjects above 75%! 🎉</span>';
+                    return `<span class="badge badge-danger">${s} ${pct}%</span>`;
+                }).join(' ')
+                : '<span class="badge badge-success">All subjects above 75%! 🎉</span>';
 
             // This week
             const now = new Date();
@@ -741,8 +1004,24 @@
             const weekTotal = weekP + weekA;
             const weekPct = weekTotal ? Math.round(weekP / weekTotal * 100) : 100;
             document.getElementById('iWeek').innerHTML = weekTotal 
-                ? `<span class="${weekPct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${weekPct}%</span> (${weekP}/${weekTotal})`
+                ? `<span class="badge ${weekPct >= 75 ? 'badge-success' : 'badge-danger'}">${weekPct}%</span> ${weekP}/${weekTotal} classes`
                 : '<span class="text-gray-500">No classes this week</span>';
+
+            // By day
+            const byDay = {};
+            DAYS.forEach(d => byDay[d] = { p: 0, a: 0 });
+            Object.entries(data.logs).forEach(([id, log]) => {
+                const day = DAYS[fromId(id).getDay()];
+                (log.classes || []).forEach(c => {
+                    if (c.status === 'P') byDay[day].p++;
+                    else if (c.status === 'A') byDay[day].a++;
+                });
+            });
+            document.getElementById('iByDay').innerHTML = DAYS.filter(d => byDay[d].p + byDay[d].a > 0).map(d => {
+                const total = byDay[d].p + byDay[d].a;
+                const pct = Math.round(byDay[d].p / total * 100);
+                return `<span class="text-gray-400">${d}: <span class="${pct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${pct}%</span></span>`;
+            }).join(' • ') || '<span class="text-gray-500">No data yet</span>';
         }
 
         function toggleInsights() {
@@ -776,15 +1055,15 @@
             document.getElementById('sdCan').textContent = canDates.length;
             
             document.getElementById('sdAbsDates').innerHTML = absDates.length 
-                ? absDates.slice(0, 10).map(id => short(id)).join(', ') + (absDates.length > 10 ? '...' : '')
+                ? absDates.slice(0, 10).map(id => `<span class="badge badge-danger">${short(id)}</span>`).join(' ') + (absDates.length > 10 ? ' ...' : '')
                 : '<span class="text-gray-600">None</span>';
             
             document.getElementById('sdCanDates').innerHTML = canDates.length
-                ? canDates.slice(0, 10).map(id => short(id)).join(', ') + (canDates.length > 10 ? '...' : '')
+                ? canDates.slice(0, 10).map(id => `<span class="badge badge-warning">${short(id)}</span>`).join(' ') + (canDates.length > 10 ? ' ...' : '')
                 : '<span class="text-gray-600">None</span>';
             
             document.getElementById('sdRecent').innerHTML = recentAtt.length
-                ? recentAtt.map(id => short(id)).join(', ')
+                ? recentAtt.map(id => `<span class="badge badge-success">${short(id)}</span>`).join(' ')
                 : '<span class="text-gray-600">None yet</span>';
             
             document.getElementById('modalSubj').classList.remove('hidden');
@@ -802,6 +1081,16 @@
             const sched = getSched(id);
             document.getElementById('daySub').textContent = DAYS[fromId(id).getDay()] + (sched.reason ? ` • ${sched.reason}` : '');
             
+            // Show note if exists
+            const note = data.notes && data.notes[id];
+            const noteEl = document.getElementById('dayNote');
+            if (note) {
+                noteEl.textContent = note;
+                noteEl.classList.remove('hidden');
+            } else {
+                noteEl.classList.add('hidden');
+            }
+            
             if (data.logs[id]) {
                 selClasses = JSON.parse(JSON.stringify(data.logs[id].classes || []));
             } else {
@@ -809,6 +1098,7 @@
             }
             
             document.getElementById('btnAdd').classList.toggle('hidden', isFut);
+            document.getElementById('btnNotes').classList.toggle('hidden', isFut);
             renderDayList();
             renderCal();
             dirty = false;
@@ -830,17 +1120,17 @@
             btn.classList.toggle('hidden', isFut);
             
             list.innerHTML = selClasses.map((c, i) => `
-                <div class="flex items-center justify-between bg-dark-700 rounded-lg px-2.5 py-1.5">
+                <div class="flex items-center justify-between bg-dark-700 hover:bg-dark-600 rounded-lg px-2.5 py-2 transition-colors">
                     <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-xs font-medium">${c.subj}</span>
+                        <span class="text-xs font-semibold">${c.subj}</span>
                         <span class="text-[9px] text-gray-500 truncate">${NAMES[c.subj] || ''}</span>
                     </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="setStatus(${i},'P')" class="w-6 h-6 rounded text-[10px] font-semibold btn ${c.status === 'P' ? 'status-p text-white' : 'bg-dark-600 text-gray-400'}">P</button>
-                        <button onclick="setStatus(${i},'A')" class="w-6 h-6 rounded text-[10px] font-semibold btn ${c.status === 'A' ? 'status-a text-white' : 'bg-dark-600 text-gray-400'}">A</button>
-                        <button onclick="setStatus(${i},'C')" class="w-6 h-6 rounded text-[10px] font-semibold btn ${c.status === 'C' ? 'status-c text-white' : 'bg-dark-600 text-gray-400'}">C</button>
-                        <button onclick="removeClass(${i})" class="w-6 h-6 rounded bg-dark-600 text-gray-400 hover:text-red-400 btn flex items-center justify-center">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="setStatus(${i},'P')" class="w-7 h-7 rounded text-[10px] font-bold btn ${c.status === 'P' ? 'status-p text-white shadow-lg' : 'bg-dark-600 text-gray-400'}">P</button>
+                        <button onclick="setStatus(${i},'A')" class="w-7 h-7 rounded text-[10px] font-bold btn ${c.status === 'A' ? 'status-a text-white shadow-lg' : 'bg-dark-600 text-gray-400'}">A</button>
+                        <button onclick="setStatus(${i},'C')" class="w-7 h-7 rounded text-[10px] font-bold btn ${c.status === 'C' ? 'status-c text-white shadow-lg' : 'bg-dark-600 text-gray-400'}">C</button>
+                        <button onclick="removeClass(${i})" class="w-7 h-7 rounded bg-dark-600 text-gray-400 hover:text-red-400 hover:bg-red-500/20 btn flex items-center justify-center">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
                 </div>
@@ -852,13 +1142,50 @@
         
         async function saveDay() {
             if (!selDate) return;
+            showLoading();
             try {
                 await saveLog(selDate, { date: selDate, classes: selClasses });
-                recalc(); await saveData(); render(); dirty = false; toast('✓ Saved');
-            } catch (e) { console.error(e); toast('Error'); }
+                recalc(); await saveData(); render(); dirty = false; 
+                hideLoading();
+                toast('✓ Changes saved successfully');
+            } catch (e) { console.error(e); hideLoading(); toast('❌ Error saving'); }
         }
         
         function goToday() { curMonth = new Date(); selectDay(today()); render(); }
+
+        // =====================================================================
+        // NOTES
+        // =====================================================================
+        function openNotes() {
+            if (!selDate) return;
+            document.getElementById('noteDate').textContent = short(selDate);
+            document.getElementById('noteText').value = data.notes[selDate] || '';
+            document.getElementById('modalNotes').classList.remove('hidden');
+        }
+        function closeNotes() { document.getElementById('modalNotes').classList.add('hidden'); }
+        
+        async function saveNote() {
+            const text = document.getElementById('noteText').value.trim();
+            if (text) {
+                data.notes[selDate] = text;
+            } else {
+                delete data.notes[selDate];
+            }
+            await saveData();
+            selectDay(selDate);
+            render();
+            closeNotes();
+            toast('✓ Note saved');
+        }
+        
+        async function deleteNote() {
+            delete data.notes[selDate];
+            await saveData();
+            selectDay(selDate);
+            render();
+            closeNotes();
+            toast('✓ Note deleted');
+        }
 
         // =====================================================================
         // ADD CLASS MODAL
@@ -878,15 +1205,15 @@
             list.innerHTML = SUBJECTS.map(s => {
                 const cnt = counts[s] || 0;
                 return `
-                    <div class="flex items-center justify-between bg-dark-700 rounded-lg px-3 py-2">
+                    <div class="flex items-center justify-between bg-dark-700 hover:bg-dark-600 rounded-lg px-3 py-2.5 transition-colors">
                         <div>
-                            <span class="text-xs font-medium">${s}</span>
-                            <span class="text-[9px] text-gray-500 ml-1">${NAMES[s]}</span>
+                            <span class="text-xs font-semibold">${s}</span>
+                            <span class="text-[9px] text-gray-500 ml-1.5">${NAMES[s]}</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button onclick="removeOne('${s}')" class="w-6 h-6 rounded bg-dark-600 text-gray-400 hover:text-red-400 btn ${cnt === 0 ? 'opacity-30 pointer-events-none' : ''}">−</button>
-                            <span class="w-5 text-center text-xs font-semibold ${cnt > 0 ? 'text-blue-400' : 'text-gray-500'}">${cnt}</span>
-                            <button onclick="addOne('${s}')" class="w-6 h-6 rounded bg-dark-600 text-gray-400 hover:text-emerald-400 btn">+</button>
+                            <button onclick="removeOne('${s}')" class="w-7 h-7 rounded bg-dark-600 text-gray-400 hover:text-red-400 hover:bg-red-500/20 btn font-bold ${cnt === 0 ? 'opacity-30 pointer-events-none' : ''}">−</button>
+                            <span class="w-6 text-center text-sm font-bold ${cnt > 0 ? 'text-blue-400' : 'text-gray-500'}">${cnt}</span>
+                            <button onclick="addOne('${s}')" class="w-7 h-7 rounded bg-dark-600 text-gray-400 hover:text-emerald-400 hover:bg-emerald-500/20 btn font-bold">+</button>
                         </div>
                     </div>
                 `;
@@ -904,6 +1231,207 @@
             dirty = true;
             closeAddClass();
             renderDayList();
+            toast('✓ Classes updated');
+        }
+
+        // =====================================================================
+        // CALCULATOR
+        // =====================================================================
+        function openCalculator() {
+            const sel = document.getElementById('calcSubj');
+            sel.innerHTML = '<option value="">Select Subject</option>' + SUBJECTS.map(s => `<option value="${s}">${s} - ${NAMES[s]}</option>`).join('');
+            renderBunkCalc();
+            document.getElementById('modalCalc').classList.remove('hidden');
+        }
+        function closeCalculator() { document.getElementById('modalCalc').classList.add('hidden'); }
+        
+        function calculate() {
+            const subj = document.getElementById('calcSubj').value;
+            const target = parseFloat(document.getElementById('calcTarget').value);
+            const result = document.getElementById('calcResult');
+            
+            if (!subj || !target) {
+                result.innerHTML = '<p class="text-red-400">Please select subject and enter target %</p>';
+                result.classList.remove('hidden');
+                return;
+            }
+            
+            const d = data.att[subj] || { a: 0, h: 0 };
+            if (d.h === 0) {
+                result.innerHTML = '<p class="text-amber-400">No classes held yet</p>';
+                result.classList.remove('hidden');
+                return;
+            }
+            
+            const currentPct = (d.a / d.h * 100).toFixed(1);
+            
+            if (target <= currentPct) {
+                result.innerHTML = `<p class="text-emerald-400">✓ You're already at ${currentPct}%!</p>`;
+            } else {
+                const needed = Math.ceil((target * d.h - d.a) / (1 - target / 100));
+                result.innerHTML = `
+                    <div class="bg-dark-600 rounded p-2">
+                        <p class="text-gray-400 mb-1">Current: <span class="text-white font-bold">${currentPct}%</span></p>
+                        <p class="text-emerald-400">You need to attend <span class="font-bold">${needed}</span> consecutive classes to reach ${target}%</p>
+                    </div>
+                `;
+            }
+            result.classList.remove('hidden');
+        }
+        
+        function renderBunkCalc() {
+            const box = document.getElementById('bunkCalc');
+            const results = SUBJECTS.map(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                if (d.h === 0) return null;
+                const pct = d.a / d.h * 100;
+                if (pct < 75) return null;
+                const canBunk = Math.floor((d.a - 0.75 * d.h) / 0.75);
+                return { subj: s, canBunk, pct: pct.toFixed(1) };
+            }).filter(Boolean);
+            
+            if (results.length === 0) {
+                box.innerHTML = '<p class="text-[10px] text-gray-500">No subjects eligible for bunking</p>';
+                return;
+            }
+            
+            box.innerHTML = results.map(r => `
+                <div class="flex justify-between items-center text-[10px] py-1">
+                    <span class="text-gray-400">${r.subj} (${r.pct}%)</span>
+                    <span class="badge badge-success">Can bunk ${r.canBunk}</span>
+                </div>
+            `).join('');
+        }
+
+        // =====================================================================
+        // HEATMAP
+        // =====================================================================
+        function openHeatmap() {
+            renderHeatmap();
+            document.getElementById('modalHeatmap').classList.remove('hidden');
+        }
+        function closeHeatmap() { document.getElementById('modalHeatmap').classList.add('hidden'); }
+        
+        function renderHeatmap() {
+            const grid = document.getElementById('heatmapGrid');
+            const weeks = 12;
+            const today = new Date();
+            const data_map = {};
+            
+            Object.entries(data.logs).forEach(([id, log]) => {
+                const classes = log.classes || [];
+                const p = classes.filter(c => c.status === 'P').length;
+                const total = classes.filter(c => c.status !== 'C').length;
+                data_map[id] = total > 0 ? p / total : 0;
+            });
+            
+            let html = '<div class="space-y-1">';
+            for (let w = weeks - 1; w >= 0; w--) {
+                html += '<div class="flex gap-1">';
+                for (let d = 0; d < 7; d++) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - (w * 7 + (6 - d)));
+                    const id = toId(date);
+                    const val = data_map[id];
+                    let color = 'bg-gray-700';
+                    if (val !== undefined) {
+                        if (val >= 0.9) color = 'bg-emerald-500';
+                        else if (val >= 0.75) color = 'bg-emerald-500/70';
+                        else if (val >= 0.6) color = 'bg-amber-500/50';
+                        else color = 'bg-red-500/30';
+                    }
+                    html += `<div class="heatmap-cell w-4 h-4 rounded ${color} cursor-pointer has-tooltip" title="${short(id)}${val !== undefined ? ': ' + Math.round(val * 100) + '%' : ''}"></div>`;
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+            grid.innerHTML = html;
+        }
+
+        // =====================================================================
+        // PREDICTIONS
+        // =====================================================================
+        function togglePred() {
+            const b = document.getElementById('predBox');
+            b.classList.toggle('hidden');
+            document.getElementById('predToggle').textContent = b.classList.contains('hidden') ? 'Show' : 'Hide';
+            if (!b.classList.contains('hidden')) renderPredictions();
+        }
+
+        function renderPredictions() {
+            const list = document.getElementById('predList');
+            const predictions = SUBJECTS.map(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                const current = d.h ? (d.a / d.h * 100).toFixed(1) : 100;
+                const pct5 = ((d.a + 5) / (d.h + 5) * 100).toFixed(1);
+                const pct10 = ((d.a + 10) / (d.h + 10) * 100).toFixed(1);
+                const pct20 = ((d.a + 20) / (d.h + 20) * 100).toFixed(1);
+                return { subj: s, current, pct5, pct10, pct20 };
+            });
+
+            list.innerHTML = predictions.map(p => `
+                <div class="bg-dark-700 hover:bg-dark-600 rounded-lg px-3 py-2 transition-colors">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="text-[11px] font-semibold">${p.subj}</span>
+                        <span class="text-[10px] text-gray-500">Now: <span class="font-bold">${p.current}%</span></span>
+                    </div>
+                    <div class="flex gap-2 text-[10px]">
+                        <span class="flex-1 text-center py-1 rounded ${p.pct5 >= 75 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}">+5: ${p.pct5}%</span>
+                        <span class="flex-1 text-center py-1 rounded ${p.pct10 >= 75 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">+10: ${p.pct10}%</span>
+                        <span class="flex-1 text-center py-1 rounded ${p.pct20 >= 75 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'}">+20: ${p.pct20}%</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =====================================================================
+        // TRENDS
+        // =====================================================================
+        function toggleTrends() {
+            const b = document.getElementById('trendsBox');
+            b.classList.toggle('hidden');
+            document.getElementById('trendsToggle').textContent = b.classList.contains('hidden') ? 'Show' : 'Hide';
+            if (!b.classList.contains('hidden')) renderTrends();
+        }
+
+        function renderTrends() {
+            const list = document.getElementById('trendsList');
+            const trends = SUBJECTS.map(s => {
+                const logs = Object.entries(data.logs)
+                    .filter(([_, log]) => log.classes?.some(c => c.subj === s))
+                    .sort(([a], [b]) => a.localeCompare(b));
+                
+                if (logs.length < 5) return null;
+                
+                const recent = logs.slice(-5);
+                const older = logs.slice(-10, -5);
+                
+                const recentP = recent.reduce((sum, [_, log]) => {
+                    const cls = log.classes.filter(c => c.subj === s);
+                    const p = cls.filter(c => c.status === 'P').length;
+                    const total = cls.filter(c => c.status !== 'C').length;
+                    return sum + (total > 0 ? p / total : 0);
+                }, 0) / recent.length;
+                
+                const olderP = older.length > 0 ? older.reduce((sum, [_, log]) => {
+                    const cls = log.classes.filter(c => c.subj === s);
+                    const p = cls.filter(c => c.status === 'P').length;
+                    const total = cls.filter(c => c.status !== 'C').length;
+                    return sum + (total > 0 ? p / total : 0);
+                }, 0) / older.length : recentP;
+                
+                const trend = recentP > olderP ? 'up' : recentP < olderP ? 'down' : 'stable';
+                return { subj: s, trend, recentPct: (recentP * 100).toFixed(0) };
+            }).filter(Boolean);
+
+            list.innerHTML = trends.map(t => `
+                <div class="bg-dark-700 rounded-lg px-3 py-2 flex justify-between items-center">
+                    <span class="text-[11px] font-medium">${t.subj}</span>
+                    <span class="text-[10px] ${t.trend === 'up' ? 'text-emerald-400 trend-up' : t.trend === 'down' ? 'text-red-400 trend-down' : 'text-gray-400'}">
+                        Last 5: ${t.recentPct}%
+                    </span>
+                </div>
+            `).join('');
         }
 
         // =====================================================================
@@ -915,10 +1443,11 @@
         
         async function addEv() {
             const id = document.getElementById('evDate').value, type = document.getElementById('evType').value, name = document.getElementById('evName').value.trim();
-            if (!id || !name) { toast('Fill all fields'); return; }
+            if (!id || !name) { toast('❌ Fill all fields'); return; }
             const ev = { type, name };
             if (type === 'exchange') ev.follows = parseInt(document.getElementById('evFollow').value);
             data.cal[id] = ev;
+            showLoading();
             await saveData();
             if (data.logs[id]) {
                 const sched = getSched(id);
@@ -929,27 +1458,36 @@
                 await saveLog(id, data.logs[id]);
                 recalc(); await saveData();
             }
-            render(); renderEvList(); toast('Event added');
+            hideLoading();
+            render(); renderEvList(); toast('✓ Event added');
             document.getElementById('evDate').value = ''; document.getElementById('evName').value = '';
         }
         
-        async function delEv(id) { delete data.cal[id]; await saveData(); render(); renderEvList(); toast('Removed'); }
+        async function delEv(id) { 
+            showLoading();
+            delete data.cal[id]; 
+            await saveData(); 
+            hideLoading();
+            render(); renderEvList(); toast('✓ Event removed'); 
+        }
         
         function renderEvList() {
             const list = document.getElementById('evList');
             const evs = Object.entries(data.cal || {}).sort(([a], [b]) => a.localeCompare(b));
-            if (!evs.length) { list.innerHTML = '<p class="text-[9px] text-gray-500">No events</p>'; return; }
+            if (!evs.length) { list.innerHTML = '<p class="text-[9px] text-gray-500">No events added</p>'; return; }
             const cols = { holiday: 'bg-red-500/20 text-red-300', exam: 'bg-amber-500/20 text-amber-300', exchange: 'bg-violet-500/20 text-violet-300', halfday: 'bg-blue-500/20 text-blue-300' };
             list.innerHTML = evs.map(([id, e]) => `
-                <div class="flex items-center justify-between p-1.5 bg-dark-700 rounded">
-                    <div class="flex items-center gap-1.5 min-w-0">
-                        <span class="text-[8px] px-1.5 py-0.5 rounded ${cols[e.type]}">${e.type}</span>
+                <div class="flex items-center justify-between p-2 bg-dark-700 hover:bg-dark-600 rounded transition-colors">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-[8px] px-2 py-1 rounded font-semibold ${cols[e.type]}">${e.type.toUpperCase()}</span>
                         <div class="min-w-0">
                             <p class="text-[10px] font-medium truncate">${e.name}</p>
                             <p class="text-[8px] text-gray-500">${short(id)}</p>
                         </div>
                     </div>
-                    <button onclick="delEv('${id}')" class="p-1 hover:bg-dark-600 rounded text-gray-500 hover:text-red-400 btn"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                    <button onclick="delEv('${id}')" class="p-1.5 hover:bg-dark-600 rounded text-gray-500 hover:text-red-400 btn">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                 </div>
             `).join('');
         }
@@ -966,12 +1504,14 @@
         function closeSettings() { document.getElementById('modalSettings').classList.add('hidden'); }
 
         async function saveSemDates() {
+            showLoading();
             data.semStart = document.getElementById('semStart').value || null;
             data.semEnd = document.getElementById('semEnd').value || null;
             await saveData();
             updateSemInfo();
             render();
-            toast('Semester dates saved');
+            hideLoading();
+            toast('✓ Semester dates saved');
         }
 
         function updateSemInfo() {
@@ -995,37 +1535,27 @@
             }
         }
 
-        // =====================================================================
-        // PREDICTIONS
-        // =====================================================================
-        function togglePred() {
-            const b = document.getElementById('predBox');
-            b.classList.toggle('hidden');
-            document.getElementById('predToggle').textContent = b.classList.contains('hidden') ? 'Show' : 'Hide';
-            if (!b.classList.contains('hidden')) renderPredictions();
-        }
-
-        function renderPredictions() {
-            const list = document.getElementById('predList');
-            const predictions = SUBJECTS.map(s => {
-                const d = data.att[s] || { a: 0, h: 0 };
-                const pct5 = ((d.a + 5) / (d.h + 5) * 100).toFixed(1);
-                const pct10 = ((d.a + 10) / (d.h + 10) * 100).toFixed(1);
-                return { subj: s, pct5, pct10, current: d.h ? (d.a / d.h * 100).toFixed(1) : 100 };
-            });
-
-            list.innerHTML = predictions.map(p => `
-                <div class="bg-dark-700 rounded-lg px-2.5 py-1.5">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[11px] font-medium">${p.subj}</span>
-                        <span class="text-[10px] text-gray-500">Now: ${p.current}%</span>
-                    </div>
-                    <div class="flex gap-2 text-[10px]">
-                        <span class="${p.pct5 >= 75 ? 'text-emerald-400' : 'text-amber-400'}">+5: ${p.pct5}%</span>
-                        <span class="${p.pct10 >= 75 ? 'text-emerald-400' : 'text-amber-400'}">+10: ${p.pct10}%</span>
-                    </div>
-                </div>
-            `).join('');
+        async function backupData() {
+            const backup = {
+                version: '2.0',
+                timestamp: new Date().toISOString(),
+                data: {
+                    att: data.att,
+                    logs: data.logs,
+                    cal: data.cal,
+                    notes: data.notes,
+                    semStart: data.semStart,
+                    semEnd: data.semEnd
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `manipal-attendance-backup-${today()}.json`;
+            a.click();
+            toast('✓ Backup downloaded');
         }
 
         // =====================================================================
@@ -1035,12 +1565,13 @@
         function closeExport() { document.getElementById('modalExport').classList.add('hidden'); }
 
         function exportCSV() {
-            let csv = 'Subject,Attended,Held,Percentage,Limit,Progress\n';
+            let csv = 'Subject,Full Name,Attended,Held,Percentage,Limit,Progress,Status\n';
             SUBJECTS.forEach(s => {
                 const d = data.att[s] || { a: 0, h: 0 };
                 const pct = d.h ? (d.a / d.h * 100).toFixed(2) : 100;
                 const prog = ((d.h / LIMITS[s]) * 100).toFixed(2);
-                csv += `${s},${d.a},${d.h},${pct},${LIMITS[s]},${prog}\n`;
+                const status = pct >= 75 ? 'Safe' : 'Critical';
+                csv += `${s},"${NAMES[s]}",${d.a},${d.h},${pct},${LIMITS[s]},${prog},${status}\n`;
             });
             
             const blob = new Blob([csv], { type: 'text/csv' });
@@ -1049,14 +1580,18 @@
             a.href = url;
             a.download = `attendance-${today()}.csv`;
             a.click();
-            toast('CSV exported');
+            toast('✓ CSV exported');
             closeExport();
         }
 
         function exportReport() {
-            let report = `MANIPAL ATTENDANCE REPORT\nGenerated: ${new Date().toLocaleString()}\n\n`;
-            report += `OVERALL STATS\n`;
-            report += `─────────────────────────────\n`;
+            let report = `═══════════════════════════════════════════\n`;
+            report += `  MANIPAL ATTENDANCE REPORT\n`;
+            report += `  Batch D2 • ${new Date().toLocaleDateString()}\n`;
+            report += `═══════════════════════════════════════════\n\n`;
+            
+            report += `OVERALL STATISTICS\n`;
+            report += `─────────────────────────────────────────\n`;
             
             let totalA = 0, totalH = 0;
             SUBJECTS.forEach(s => {
@@ -1064,21 +1599,42 @@
                 totalA += d.a; totalH += d.h;
             });
             const overallPct = totalH ? (totalA / totalH * 100).toFixed(2) : 100;
-            report += `Overall Attendance: ${overallPct}%\n`;
-            report += `Total Attended: ${totalA}\n`;
-            report += `Total Held: ${totalH}\n\n`;
+            report += `Overall Attendance:  ${overallPct}%\n`;
+            report += `Total Attended:      ${totalA} classes\n`;
+            report += `Total Held:          ${totalH} classes\n`;
+            report += `Total Missed:        ${totalH - totalA} classes\n\n`;
+
+            if (data.semStart && data.semEnd) {
+                report += `SEMESTER INFORMATION\n`;
+                report += `─────────────────────────────────────────\n`;
+                report += `Start Date:          ${short(data.semStart)}\n`;
+                report += `End Date:            ${short(data.semEnd)}\n`;
+                const remaining = Math.ceil((new Date(data.semEnd) - new Date()) / (1000 * 60 * 60 * 24));
+                report += `Days Remaining:      ${remaining > 0 ? remaining : 0}\n\n`;
+            }
 
             report += `SUBJECT WISE BREAKDOWN\n`;
-            report += `─────────────────────────────\n`;
+            report += `─────────────────────────────────────────\n\n`;
             SUBJECTS.forEach(s => {
                 const d = data.att[s] || { a: 0, h: 0 };
                 const pct = d.h ? (d.a / d.h * 100).toFixed(2) : 100;
-                const status = pct >= 75 ? 'SAFE' : 'CRITICAL';
-                report += `${s} (${NAMES[s]})\n`;
-                report += `  Attendance: ${pct}% (${d.a}/${d.h})\n`;
-                report += `  Progress: ${d.h}/${LIMITS[s]} classes\n`;
-                report += `  Status: ${status}\n\n`;
+                const status = pct >= 75 ? '✓ SAFE' : '⚠ CRITICAL';
+                report += `${s} - ${NAMES[s]}\n`;
+                report += `  Attendance:  ${pct}% (${d.a}/${d.h})\n`;
+                report += `  Progress:    ${d.h}/${LIMITS[s]} classes\n`;
+                report += `  Status:      ${status}\n`;
+                if (pct >= 75) {
+                    const canBunk = Math.floor((d.a - 0.75 * d.h) / 0.75);
+                    report += `  Can Bunk:    ${canBunk} classes\n`;
+                } else {
+                    const need = Math.ceil((0.75 * d.h - d.a) / 0.25);
+                    report += `  Need:        ${need} classes to reach 75%\n`;
+                }
+                report += `\n`;
             });
+
+            report += `─────────────────────────────────────────\n`;
+            report += `Generated by Manipal Attendance Pro\n`;
 
             const blob = new Blob([report], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
@@ -1086,7 +1642,35 @@
             a.href = url;
             a.download = `attendance-report-${today()}.txt`;
             a.click();
-            toast('Report exported');
+            toast('✓ Report exported');
+            closeExport();
+        }
+
+        function exportDetailed() {
+            let csv = 'Date,Subject,Status,Day,Note\n';
+            const dates = Object.keys(data.logs).sort();
+            dates.forEach(id => {
+                const log = data.logs[id];
+                const day = DAYS[fromId(id).getDay()];
+                const note = (data.notes && data.notes[id]) || '';
+                (log.classes || []).forEach(c => {
+                    csv += `${id},${c.subj},${c.status},${day},"${note.replace(/"/g, '""')}"\n`;
+                });
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance-detailed-${today()}.csv`;
+            a.click();
+            toast('✓ Detailed export complete');
+            closeExport();
+        }
+
+        function printReport() {
+            window.print();
+            toast('✓ Print dialog opened');
             closeExport();
         }
 
@@ -1100,11 +1684,11 @@
             const list = document.getElementById('bulkList'), tid = today(), dates = [];
             const d = new Date();
             for (let i = 1; i <= 30; i++) { d.setDate(d.getDate() - 1); const id = toId(d); if (data.logs[id] || !getSched(id).subjs.length) continue; dates.push(id); }
-            if (!dates.length) { list.innerHTML = '<span class="text-[9px] text-gray-500">All caught up! 🎉</span>'; return; }
+            if (!dates.length) { list.innerHTML = '<span class="badge badge-success">All caught up! 🎉</span>'; return; }
             bulkSet = new Set(dates);
             list.innerHTML = dates.map(id => `
-                <label class="flex items-center gap-1 px-2 py-1 bg-dark-700 rounded text-[9px] cursor-pointer">
-                    <input type="checkbox" checked onchange="toggleBulkItem('${id}')" class="w-3 h-3 rounded bg-dark-600 border-dark-500 text-blue-500">
+                <label class="flex items-center gap-1.5 px-2 py-1.5 bg-dark-700 hover:bg-dark-600 rounded text-[10px] cursor-pointer transition-colors">
+                    <input type="checkbox" checked onchange="toggleBulkItem('${id}')" class="w-3.5 h-3.5 rounded bg-dark-600 border-dark-500 text-blue-500">
                     <span>${short(id)}</span>
                 </label>
             `).join('');
@@ -1113,13 +1697,58 @@
         function toggleBulkItem(id) { bulkSet.has(id) ? bulkSet.delete(id) : bulkSet.add(id); }
         
         async function bulkSave() {
-            if (!bulkSet.size) { toast('None selected'); return; }
-            toast(`Saving ${bulkSet.size}...`);
+            if (!bulkSet.size) { toast('❌ None selected'); return; }
+            showLoading();
             for (const id of bulkSet) {
                 const sched = getSched(id);
                 await saveLog(id, { date: id, classes: sched.subjs.map(s => ({ subj: s, status: 'P' })) });
             }
-            recalc(); await saveData(); render(); toast(`✓ ${bulkSet.size} saved`); bulkSet.clear();
+            recalc(); await saveData(); render(); 
+            hideLoading();
+            toast(`✓ ${bulkSet.size} days marked present`); 
+            bulkSet.clear();
+        }
+
+        async function bulkAbsent() {
+            if (!bulkSet.size) { toast('❌ None selected'); return; }
+            showLoading();
+            for (const id of bulkSet) {
+                const sched = getSched(id);
+                await saveLog(id, { date: id, classes: sched.subjs.map(s => ({ subj: s, status: 'A' })) });
+            }
+            recalc(); await saveData(); render(); 
+            hideLoading();
+            toast(`✓ ${bulkSet.size} days marked absent`); 
+            bulkSet.clear();
+        }
+
+        // =====================================================================
+        // KEYBOARD SHORTCUTS
+        // =====================================================================
+        function toggleShortcuts() {
+            const b = document.getElementById('shortcutsBox');
+            b.classList.toggle('hidden');
+            document.getElementById('shortcutsToggle').textContent = b.classList.contains('hidden') ? 'Show' : 'Hide';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            // Skip if any modal is open or user is typing
+            if (document.querySelector('[id^="modal"]:not(.hidden)') || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            switch(e.key.toLowerCase()) {
+                case 't': goToday(); break;
+                case 'c': openCalculator(); break;
+                case 'e': openCal(); break;
+                case 's': openSettings(); break;
+                case 'h': openHeatmap(); break;
+                case 'arrowleft': chgMonth(-1); break;
+                case 'arrowright': chgMonth(1); break;
+                case 'escape': closeAllModals(); break;
+            }
+        });
+
+        function closeAllModals() {
+            document.querySelectorAll('[id^="modal"]').forEach(m => m.classList.add('hidden'));
         }
 
         // =====================================================================
@@ -1129,11 +1758,14 @@
         function closeReset() { document.getElementById('modalReset').classList.add('hidden'); }
         
         async function doReset() {
-            closeReset(); toast('Resetting...');
+            closeReset(); 
+            showLoading();
             const logs = await db.collection('att_users').doc(user.uid).collection('logs').get();
             const batch = db.batch(); logs.forEach(d => batch.delete(d.ref)); await batch.commit();
             SUBJECTS.forEach(s => data.att[s] = { a: 0, h: 0 }); data.logs = {};
-            await saveData(); selectDay(today()); render(); toast('✓ Reset');
+            await saveData(); selectDay(today()); render(); 
+            hideLoading();
+            toast('✓ Attendance reset complete');
         }
 
         // =====================================================================
