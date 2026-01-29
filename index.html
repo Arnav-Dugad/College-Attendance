@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Manipal Attendance</title>
+    <title>College Attendance Logger</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -37,6 +37,7 @@
         .cal-logged { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.25); }
         .cal-holiday { background: rgba(239, 68, 68, 0.1); }
         .cal-event { background: rgba(139, 92, 246, 0.1); }
+        .cal-sunday { background: rgba(251, 191, 36, 0.08); border-color: rgba(251, 191, 36, 0.2); }
         .cal-selected { background: rgba(59, 130, 246, 0.2) !important; border-color: rgba(59, 130, 246, 0.4) !important; }
         .cal-today { box-shadow: inset 0 0 0 1.5px #3b82f6; }
         .status-p { background: linear-gradient(135deg, #10b981, #059669); }
@@ -48,6 +49,8 @@
         .hide-scroll::-webkit-scrollbar { display: none; }
         .btn { transition: all 0.15s; }
         .btn:active { transform: scale(0.97); }
+        .stat-card { position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--glow-color), transparent); }
     </style>
 </head>
 <body class="text-gray-100 min-h-screen">
@@ -59,7 +62,7 @@
                 <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                 </div>
-                <h1 class="font-bold text-lg">Manipal Attendance</h1>
+                <h1 class="font-bold text-lg">College Attendance Logger</h1>
                 <p class="text-[11px] text-gray-500 mt-0.5">Batch D2 • Semester Tracker</p>
             </div>
             
@@ -96,11 +99,12 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </div>
                     <div class="leading-tight">
-                        <p class="text-sm font-semibold">Attendance</p>
+                        <p class="text-sm font-semibold">Attendance Logger</p>
                         <p class="text-[10px] text-gray-500" id="hdrUser"></p>
                     </div>
                 </div>
                 <div class="flex gap-1">
+                    <button onclick="openSettings()" class="p-1.5 rounded-lg hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></button>
                     <button onclick="openCal()" class="p-1.5 rounded-lg hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></button>
                     <button onclick="logout()" class="p-1.5 rounded-lg hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg></button>
                 </div>
@@ -111,21 +115,57 @@
             
             <!-- Stats -->
             <div class="grid grid-cols-4 gap-2">
-                <div class="glass rounded-xl p-2 text-center">
+                <div class="stat-card glass rounded-xl p-2 text-center" style="--glow-color: #3b82f6">
                     <p class="text-base font-bold text-blue-400" id="sO">-</p>
                     <p class="text-[9px] text-gray-500">Overall</p>
                 </div>
-                <div class="glass rounded-xl p-2 text-center">
+                <div class="stat-card glass rounded-xl p-2 text-center" style="--glow-color: #10b981">
                     <p class="text-base font-bold text-emerald-400" id="sA">-</p>
                     <p class="text-[9px] text-gray-500">Attended</p>
                 </div>
-                <div class="glass rounded-xl p-2 text-center">
+                <div class="stat-card glass rounded-xl p-2 text-center" style="--glow-color: #f59e0b">
                     <p class="text-base font-bold text-amber-400" id="sH">-</p>
                     <p class="text-[9px] text-gray-500">Held</p>
                 </div>
-                <div class="glass rounded-xl p-2 text-center">
+                <div class="stat-card glass rounded-xl p-2 text-center" style="--glow-color: #8b5cf6">
                     <p class="text-base font-bold text-violet-400" id="sS">-</p>
                     <p class="text-[9px] text-gray-500">Semester</p>
+                </div>
+            </div>
+
+            <!-- Enhanced Stats -->
+            <div class="glass rounded-xl p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-semibold">📊 Insights</h3>
+                    <button onclick="toggleInsights()" class="text-[10px] text-blue-400" id="insightsToggle">Show</button>
+                </div>
+                <div id="insightsBox" class="hidden space-y-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-dark-700 rounded-lg p-2">
+                            <p class="text-[9px] text-gray-500 mb-0.5">Streak</p>
+                            <p class="text-sm font-bold text-emerald-400" id="iStreak">-</p>
+                        </div>
+                        <div class="bg-dark-700 rounded-lg p-2">
+                            <p class="text-[9px] text-gray-500 mb-0.5">Working Days</p>
+                            <p class="text-sm font-bold text-blue-400" id="iWorkDays">-</p>
+                        </div>
+                        <div class="bg-dark-700 rounded-lg p-2">
+                            <p class="text-[9px] text-gray-500 mb-0.5">Days Left</p>
+                            <p class="text-sm font-bold text-violet-400" id="iDaysLeft">-</p>
+                        </div>
+                        <div class="bg-dark-700 rounded-lg p-2">
+                            <p class="text-[9px] text-gray-500 mb-0.5">Avg Attendance</p>
+                            <p class="text-sm font-bold text-amber-400" id="iAvg">-</p>
+                        </div>
+                    </div>
+                    <div class="bg-dark-700 rounded-lg p-2">
+                        <p class="text-[9px] text-gray-500 mb-1">Critical Subjects (< 75%)</p>
+                        <div id="iCritical" class="text-[10px]"></div>
+                    </div>
+                    <div class="bg-dark-700 rounded-lg p-2">
+                        <p class="text-[9px] text-gray-500 mb-1">This Week Summary</p>
+                        <div id="iWeek" class="text-[10px]"></div>
+                    </div>
                 </div>
             </div>
 
@@ -137,7 +177,7 @@
                     <button onclick="chgMonth(1)" class="p-1 rounded hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
                 </div>
                 <div class="grid grid-cols-7 gap-0.5 text-center text-[9px] text-gray-500 mb-1">
-                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    <span class="text-amber-400">S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                 </div>
                 <div id="calGrid" class="grid grid-cols-7 gap-0.5"></div>
             </div>
@@ -170,9 +210,23 @@
             <div>
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="text-xs font-semibold">Subjects</h3>
-                    <button onclick="toggleSubj()" class="text-[10px] text-blue-400" id="subjToggle">Details</button>
+                    <div class="flex gap-2">
+                        <button onclick="toggleSubj()" class="text-[10px] text-blue-400" id="subjToggle">Details</button>
+                    </div>
                 </div>
                 <div id="subjGrid" class="grid grid-cols-2 gap-1.5"></div>
+            </div>
+
+            <!-- Predictions -->
+            <div class="glass rounded-xl p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-semibold">🔮 Predictions</h3>
+                    <button onclick="togglePred()" class="text-[10px] text-blue-400" id="predToggle">Show</button>
+                </div>
+                <div id="predBox" class="hidden space-y-2">
+                    <p class="text-[10px] text-gray-500">If you attend next 5/10 classes:</p>
+                    <div id="predList" class="space-y-1.5"></div>
+                </div>
             </div>
 
             <!-- Bulk -->
@@ -201,12 +255,59 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
                     <span class="text-[9px]">Bulk</span>
                 </button>
+                <button onclick="openExport()" class="flex flex-col items-center p-1 text-gray-400 hover:text-white btn">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span class="text-[9px]">Export</span>
+                </button>
                 <button onclick="openReset()" class="flex flex-col items-center p-1 text-gray-400 hover:text-white btn">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     <span class="text-[9px]">Reset</span>
                 </button>
             </div>
         </nav>
+    </div>
+
+    <!-- SUBJECT DETAIL MODAL -->
+    <div id="modalSubj" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <h3 class="text-sm font-semibold" id="subjDetTitle">-</h3>
+                    <p class="text-[10px] text-gray-500" id="subjDetName">-</p>
+                </div>
+                <button onclick="closeSubjDet()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-2 mb-3">
+                <div class="bg-dark-700 rounded-lg p-2 text-center">
+                    <p class="text-sm font-bold text-emerald-400" id="sdAtt">-</p>
+                    <p class="text-[9px] text-gray-500">Attended</p>
+                </div>
+                <div class="bg-dark-700 rounded-lg p-2 text-center">
+                    <p class="text-sm font-bold text-red-400" id="sdAbs">-</p>
+                    <p class="text-[9px] text-gray-500">Absent</p>
+                </div>
+                <div class="bg-dark-700 rounded-lg p-2 text-center">
+                    <p class="text-sm font-bold text-gray-400" id="sdCan">-</p>
+                    <p class="text-[9px] text-gray-500">Cancelled</p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <p class="text-[10px] font-medium text-red-400 mb-1">📅 Absent Dates</p>
+                    <div id="sdAbsDates" class="text-[10px] text-gray-400"></div>
+                </div>
+                <div>
+                    <p class="text-[10px] font-medium text-gray-400 mb-1">🚫 Cancelled Dates</p>
+                    <div id="sdCanDates" class="text-[10px] text-gray-400"></div>
+                </div>
+                <div>
+                    <p class="text-[10px] font-medium text-emerald-400 mb-1">✓ Recent Attendance</p>
+                    <div id="sdRecent" class="text-[10px] text-gray-400"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ADD CLASS MODAL -->
@@ -254,11 +355,72 @@
         </div>
     </div>
 
+    <!-- SETTINGS MODAL -->
+    <div id="modalSettings" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold">⚙️ Settings</h3>
+                <button onclick="closeSettings()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            
+            <div class="bg-dark-700 rounded-lg p-3 mb-3">
+                <p class="text-[10px] font-medium mb-2">Semester Dates</p>
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-[9px] text-gray-500">Start Date</label>
+                        <input type="date" id="semStart" class="w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="text-[9px] text-gray-500">End Date</label>
+                        <input type="date" id="semEnd" class="w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <button onclick="saveSemDates()" class="w-full mt-2 py-1.5 rounded bg-blue-500 text-[10px] font-medium btn">Save Dates</button>
+            </div>
+
+            <div class="bg-dark-700 rounded-lg p-3">
+                <p class="text-[10px] font-medium mb-1">Semester Info</p>
+                <div class="space-y-1 text-[10px]">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Start:</span>
+                        <span id="semStartDisp">Not set</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">End:</span>
+                        <span id="semEndDisp">Not set</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Days Remaining:</span>
+                        <span id="semDaysLeft" class="text-violet-400">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Progress:</span>
+                        <span id="semProg" class="text-blue-400">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPORT MODAL -->
+    <div id="modalExport" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3">
+        <div class="glass rounded-2xl p-4 w-full max-w-xs">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-semibold">📥 Export Data</h3>
+                <button onclick="closeExport()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <div class="space-y-2">
+                <button onclick="exportCSV()" class="w-full py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs btn">📊 Export as CSV</button>
+                <button onclick="exportReport()" class="w-full py-2 rounded-lg bg-dark-600 hover:bg-dark-500 text-xs btn">📄 Generate Report</button>
+            </div>
+        </div>
+    </div>
+
     <!-- RESET MODAL -->
     <div id="modalReset" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3">
         <div class="glass rounded-2xl p-4 w-full max-w-xs">
             <h3 class="text-sm font-semibold text-red-400 mb-2">⚠️ Reset All?</h3>
-            <p class="text-[10px] text-gray-500 mb-3">Deletes all attendance logs. Calendar events are kept.</p>
+            <p class="text-[10px] text-gray-500 mb-3">Deletes all attendance logs. Calendar events and semester dates are kept.</p>
             <div class="flex gap-2">
                 <button onclick="closeReset()" class="flex-1 py-2 rounded-lg bg-dark-600 text-xs btn">Cancel</button>
                 <button onclick="doReset()" class="flex-1 py-2 rounded-lg bg-red-500 text-xs font-medium btn">Reset</button>
@@ -307,10 +469,10 @@
         // =====================================================================
         // STATE
         // =====================================================================
-        let user = null, data = { att: {}, logs: {}, cal: {} };
-        let selDate = null, selClasses = []; // Array of {subj, status}
+        let user = null, data = { att: {}, logs: {}, cal: {}, semStart: null, semEnd: null };
+        let selDate = null, selClasses = [];
         let curMonth = new Date(), subjExp = false, dirty = false, bulkSet = new Set();
-        let tempClasses = []; // For add modal
+        let tempClasses = [];
 
         // =====================================================================
         // UTILS
@@ -369,7 +531,15 @@
         // =====================================================================
         async function initUser(u) {
             const att = {}; SUBJECTS.forEach(s => att[s] = { a: 0, h: 0 });
-            await db.collection('att_users').doc(u.uid).set({ email: u.email, name: u.displayName, att, cal: { ...CAL_DEFAULT }, created: firebase.firestore.FieldValue.serverTimestamp() });
+            await db.collection('att_users').doc(u.uid).set({ 
+                email: u.email, 
+                name: u.displayName, 
+                att, 
+                cal: { ...CAL_DEFAULT },
+                semStart: null,
+                semEnd: null,
+                created: firebase.firestore.FieldValue.serverTimestamp() 
+            });
         }
         
         async function loadData() {
@@ -378,11 +548,18 @@
             data = doc.data();
             if (!data.cal) data.cal = { ...CAL_DEFAULT };
             if (!data.att) { data.att = {}; SUBJECTS.forEach(s => data.att[s] = { a: 0, h: 0 }); }
+            if (!data.semStart) data.semStart = null;
+            if (!data.semEnd) data.semEnd = null;
             const logs = await db.collection('att_users').doc(user.uid).collection('logs').get();
             data.logs = {}; logs.forEach(d => data.logs[d.id] = d.data());
         }
         
-        const saveData = () => db.collection('att_users').doc(user.uid).update({ att: data.att, cal: data.cal });
+        const saveData = () => db.collection('att_users').doc(user.uid).update({ 
+            att: data.att, 
+            cal: data.cal,
+            semStart: data.semStart,
+            semEnd: data.semEnd
+        });
         const saveLog = async (id, log) => { await db.collection('att_users').doc(user.uid).collection('logs').doc(id).set(log); data.logs[id] = log; };
         
         function recalc() {
@@ -412,22 +589,25 @@
         // =====================================================================
         // RENDER
         // =====================================================================
-        function render() { renderCal(); renderStats(); renderSubj(); updateBulk(); }
+        function render() { renderCal(); renderStats(); renderSubj(); renderInsights(); updateBulk(); }
         
         function renderCal() {
             const g = document.getElementById('calGrid'), y = curMonth.getFullYear(), m = curMonth.getMonth();
             document.getElementById('calTitle').textContent = curMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
             const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate(), tid = today();
-            let h = ''; for (let i = 0; i < first; i++) h += '<div></div>';
+            let h = ''; 
+            for (let i = 0; i < first; i++) h += '<div></div>';
             for (let d = 1; d <= days; d++) {
                 const id = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const ev = data.cal[id], logged = data.logs[id], isToday = id === tid, isSel = id === selDate, isFut = id > tid;
+                const isSunday = fromId(id).getDay() === 0;
                 let c = 'cal-cell h-7 rounded text-[10px] flex items-center justify-center cursor-pointer border border-transparent';
                 if (isToday) c += ' cal-today';
                 if (isSel) c += ' cal-selected';
                 else if (logged) c += ' cal-logged';
                 else if (ev?.type === 'holiday' || ev?.type === 'exam') c += ' cal-holiday';
                 else if (ev) c += ' cal-event';
+                else if (isSunday) c += ' cal-sunday';
                 if (isFut) c += ' text-gray-600';
                 h += `<div class="${c}" onclick="selectDay('${id}')">${d}</div>`;
             }
@@ -454,7 +634,7 @@
                 const prog = pct >= 75 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500';
                 
                 if (!subjExp) return `
-                    <div class="glass rounded-lg p-2 border ${border}">
+                    <div class="glass rounded-lg p-2 border ${border} cursor-pointer hover:bg-dark-600" onclick="openSubjDet('${s}')">
                         <div class="flex justify-between items-center mb-1">
                             <span class="text-[11px] font-medium">${s}</span>
                             <span class="text-[11px] font-bold ${pct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${Math.round(pct)}%</span>
@@ -469,7 +649,7 @@
                     </div>`;
                 
                 return `
-                    <div class="glass rounded-lg p-2.5 border ${border}">
+                    <div class="glass rounded-lg p-2.5 border ${border} cursor-pointer hover:bg-dark-600" onclick="openSubjDet('${s}')">
                         <div class="flex justify-between items-start mb-1.5">
                             <div>
                                 <span class="text-xs font-semibold">${s}</span>
@@ -492,6 +672,126 @@
         
         function toggleSubj() { subjExp = !subjExp; document.getElementById('subjToggle').textContent = subjExp ? 'Simple' : 'Details'; renderSubj(); }
 
+        function renderInsights() {
+            // Streak
+            const sorted = Object.keys(data.logs).sort().reverse();
+            let streak = 0;
+            for (const id of sorted) {
+                if (id > today()) continue;
+                const log = data.logs[id];
+                if (!log.classes || !log.classes.length) break;
+                const allP = log.classes.every(c => c.status === 'P');
+                if (allP) streak++; else break;
+            }
+            document.getElementById('iStreak').textContent = `${streak} days`;
+
+            // Working days
+            const workDays = Object.keys(data.logs).filter(id => {
+                const log = data.logs[id];
+                return log.classes && log.classes.some(c => c.status === 'P' || c.status === 'A');
+            }).length;
+            document.getElementById('iWorkDays').textContent = workDays;
+
+            // Days left
+            let daysLeft = '-';
+            if (data.semEnd) {
+                const end = new Date(data.semEnd);
+                const now = new Date();
+                const diff = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+                daysLeft = diff > 0 ? diff : 0;
+            }
+            document.getElementById('iDaysLeft').textContent = daysLeft;
+
+            // Average
+            let totalPct = 0, count = 0;
+            SUBJECTS.forEach(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                if (d.h > 0) { totalPct += (d.a / d.h * 100); count++; }
+            });
+            document.getElementById('iAvg').textContent = count ? Math.round(totalPct / count) + '%' : '-';
+
+            // Critical subjects
+            const critical = SUBJECTS.filter(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                return d.h > 0 && (d.a / d.h * 100) < 75;
+            });
+            document.getElementById('iCritical').innerHTML = critical.length 
+                ? critical.map(s => {
+                    const d = data.att[s];
+                    const pct = Math.round(d.a / d.h * 100);
+                    return `<span class="text-red-400">${s}</span> (${pct}%)`;
+                }).join(', ')
+                : '<span class="text-emerald-400">All subjects above 75%! 🎉</span>';
+
+            // This week
+            const now = new Date();
+            const weekStart = new Date(now);
+            weekStart.setDate(now.getDate() - now.getDay());
+            const weekLogs = Object.entries(data.logs).filter(([id]) => {
+                const d = new Date(id);
+                return d >= weekStart && d <= now;
+            });
+            let weekP = 0, weekA = 0;
+            weekLogs.forEach(([_, log]) => {
+                (log.classes || []).forEach(c => {
+                    if (c.status === 'P') weekP++;
+                    else if (c.status === 'A') weekA++;
+                });
+            });
+            const weekTotal = weekP + weekA;
+            const weekPct = weekTotal ? Math.round(weekP / weekTotal * 100) : 100;
+            document.getElementById('iWeek').innerHTML = weekTotal 
+                ? `<span class="${weekPct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${weekPct}%</span> (${weekP}/${weekTotal})`
+                : '<span class="text-gray-500">No classes this week</span>';
+        }
+
+        function toggleInsights() {
+            const b = document.getElementById('insightsBox');
+            b.classList.toggle('hidden');
+            document.getElementById('insightsToggle').textContent = b.classList.contains('hidden') ? 'Show' : 'Hide';
+            if (!b.classList.contains('hidden')) renderInsights();
+        }
+
+        // =====================================================================
+        // SUBJECT DETAIL
+        // =====================================================================
+        function openSubjDet(subj) {
+            document.getElementById('subjDetTitle').textContent = subj;
+            document.getElementById('subjDetName').textContent = NAMES[subj];
+            
+            const d = data.att[subj] || { a: 0, h: 0 };
+            const absDates = [], canDates = [], recentAtt = [];
+            
+            Object.entries(data.logs).sort(([a], [b]) => b.localeCompare(a)).forEach(([id, log]) => {
+                const cls = (log.classes || []).filter(c => c.subj === subj);
+                cls.forEach(c => {
+                    if (c.status === 'A') absDates.push(id);
+                    else if (c.status === 'C') canDates.push(id);
+                    else if (c.status === 'P' && recentAtt.length < 10) recentAtt.push(id);
+                });
+            });
+
+            document.getElementById('sdAtt').textContent = d.a;
+            document.getElementById('sdAbs').textContent = absDates.length;
+            document.getElementById('sdCan').textContent = canDates.length;
+            
+            document.getElementById('sdAbsDates').innerHTML = absDates.length 
+                ? absDates.slice(0, 10).map(id => short(id)).join(', ') + (absDates.length > 10 ? '...' : '')
+                : '<span class="text-gray-600">None</span>';
+            
+            document.getElementById('sdCanDates').innerHTML = canDates.length
+                ? canDates.slice(0, 10).map(id => short(id)).join(', ') + (canDates.length > 10 ? '...' : '')
+                : '<span class="text-gray-600">None</span>';
+            
+            document.getElementById('sdRecent').innerHTML = recentAtt.length
+                ? recentAtt.map(id => short(id)).join(', ')
+                : '<span class="text-gray-600">None yet</span>';
+            
+            document.getElementById('modalSubj').classList.remove('hidden');
+        }
+
+        function closeSubjDet() { document.getElementById('modalSubj').classList.add('hidden'); }
+
         // =====================================================================
         // DAY EDITOR
         // =====================================================================
@@ -502,7 +802,6 @@
             const sched = getSched(id);
             document.getElementById('daySub').textContent = DAYS[fromId(id).getDay()] + (sched.reason ? ` • ${sched.reason}` : '');
             
-            // Load or create classes array
             if (data.logs[id]) {
                 selClasses = JSON.parse(JSON.stringify(data.logs[id].classes || []));
             } else {
@@ -573,7 +872,6 @@
         
         function renderAddList() {
             const list = document.getElementById('addList');
-            // Count current classes per subject
             const counts = {};
             tempClasses.forEach(c => counts[c.subj] = (counts[c.subj] || 0) + 1);
             
@@ -622,7 +920,6 @@
             if (type === 'exchange') ev.follows = parseInt(document.getElementById('evFollow').value);
             data.cal[id] = ev;
             await saveData();
-            // Update log if exists
             if (data.logs[id]) {
                 const sched = getSched(id);
                 data.logs[id].classes = sched.subjs.map(s => {
@@ -655,6 +952,142 @@
                     <button onclick="delEv('${id}')" class="p-1 hover:bg-dark-600 rounded text-gray-500 hover:text-red-400 btn"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
             `).join('');
+        }
+
+        // =====================================================================
+        // SETTINGS
+        // =====================================================================
+        function openSettings() {
+            document.getElementById('semStart').value = data.semStart || '';
+            document.getElementById('semEnd').value = data.semEnd || '';
+            updateSemInfo();
+            document.getElementById('modalSettings').classList.remove('hidden');
+        }
+        function closeSettings() { document.getElementById('modalSettings').classList.add('hidden'); }
+
+        async function saveSemDates() {
+            data.semStart = document.getElementById('semStart').value || null;
+            data.semEnd = document.getElementById('semEnd').value || null;
+            await saveData();
+            updateSemInfo();
+            render();
+            toast('Semester dates saved');
+        }
+
+        function updateSemInfo() {
+            document.getElementById('semStartDisp').textContent = data.semStart ? short(data.semStart) : 'Not set';
+            document.getElementById('semEndDisp').textContent = data.semEnd ? short(data.semEnd) : 'Not set';
+            
+            if (data.semStart && data.semEnd) {
+                const start = new Date(data.semStart);
+                const end = new Date(data.semEnd);
+                const now = new Date();
+                const total = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+                const elapsed = Math.ceil((now - start) / (1000 * 60 * 60 * 24));
+                const remaining = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
+                const progress = Math.round((elapsed / total) * 100);
+                
+                document.getElementById('semDaysLeft').textContent = remaining > 0 ? remaining : '0';
+                document.getElementById('semProg').textContent = `${progress}%`;
+            } else {
+                document.getElementById('semDaysLeft').textContent = '-';
+                document.getElementById('semProg').textContent = '-';
+            }
+        }
+
+        // =====================================================================
+        // PREDICTIONS
+        // =====================================================================
+        function togglePred() {
+            const b = document.getElementById('predBox');
+            b.classList.toggle('hidden');
+            document.getElementById('predToggle').textContent = b.classList.contains('hidden') ? 'Show' : 'Hide';
+            if (!b.classList.contains('hidden')) renderPredictions();
+        }
+
+        function renderPredictions() {
+            const list = document.getElementById('predList');
+            const predictions = SUBJECTS.map(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                const pct5 = ((d.a + 5) / (d.h + 5) * 100).toFixed(1);
+                const pct10 = ((d.a + 10) / (d.h + 10) * 100).toFixed(1);
+                return { subj: s, pct5, pct10, current: d.h ? (d.a / d.h * 100).toFixed(1) : 100 };
+            });
+
+            list.innerHTML = predictions.map(p => `
+                <div class="bg-dark-700 rounded-lg px-2.5 py-1.5">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[11px] font-medium">${p.subj}</span>
+                        <span class="text-[10px] text-gray-500">Now: ${p.current}%</span>
+                    </div>
+                    <div class="flex gap-2 text-[10px]">
+                        <span class="${p.pct5 >= 75 ? 'text-emerald-400' : 'text-amber-400'}">+5: ${p.pct5}%</span>
+                        <span class="${p.pct10 >= 75 ? 'text-emerald-400' : 'text-amber-400'}">+10: ${p.pct10}%</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =====================================================================
+        // EXPORT
+        // =====================================================================
+        function openExport() { document.getElementById('modalExport').classList.remove('hidden'); }
+        function closeExport() { document.getElementById('modalExport').classList.add('hidden'); }
+
+        function exportCSV() {
+            let csv = 'Subject,Attended,Held,Percentage,Limit,Progress\n';
+            SUBJECTS.forEach(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                const pct = d.h ? (d.a / d.h * 100).toFixed(2) : 100;
+                const prog = ((d.h / LIMITS[s]) * 100).toFixed(2);
+                csv += `${s},${d.a},${d.h},${pct},${LIMITS[s]},${prog}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance-${today()}.csv`;
+            a.click();
+            toast('CSV exported');
+            closeExport();
+        }
+
+        function exportReport() {
+            let report = `MANIPAL ATTENDANCE REPORT\nGenerated: ${new Date().toLocaleString()}\n\n`;
+            report += `OVERALL STATS\n`;
+            report += `─────────────────────────────\n`;
+            
+            let totalA = 0, totalH = 0;
+            SUBJECTS.forEach(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                totalA += d.a; totalH += d.h;
+            });
+            const overallPct = totalH ? (totalA / totalH * 100).toFixed(2) : 100;
+            report += `Overall Attendance: ${overallPct}%\n`;
+            report += `Total Attended: ${totalA}\n`;
+            report += `Total Held: ${totalH}\n\n`;
+
+            report += `SUBJECT WISE BREAKDOWN\n`;
+            report += `─────────────────────────────\n`;
+            SUBJECTS.forEach(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                const pct = d.h ? (d.a / d.h * 100).toFixed(2) : 100;
+                const status = pct >= 75 ? 'SAFE' : 'CRITICAL';
+                report += `${s} (${NAMES[s]})\n`;
+                report += `  Attendance: ${pct}% (${d.a}/${d.h})\n`;
+                report += `  Progress: ${d.h}/${LIMITS[s]} classes\n`;
+                report += `  Status: ${status}\n\n`;
+            });
+
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance-report-${today()}.txt`;
+            a.click();
+            toast('Report exported');
+            closeExport();
         }
 
         // =====================================================================
