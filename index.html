@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manipal Attendance Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Manipal Attendance</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -11,967 +11,703 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { 'inter': ['Inter', 'sans-serif'] },
-                    colors: {
-                        dark: { 900: '#0a0a0f', 800: '#111118', 700: '#1a1a24', 600: '#24242f', 500: '#2e2e3a' }
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { dark: { 900: '#08080c', 800: '#0e0e14', 700: '#16161f', 600: '#1e1e2a', 500: '#282836' } }
                 }
             }
         }
     </script>
     
     <style>
-        * { font-family: 'Inter', sans-serif; }
-        body { background: #0a0a0f; min-height: 100vh; }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 3px; }
-        .glass { background: rgba(26, 26, 36, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.04); }
-        .btn-p { background: linear-gradient(135deg, #10b981, #059669); }
-        .btn-a { background: linear-gradient(135deg, #ef4444, #dc2626); }
-        .btn-c { background: linear-gradient(135deg, #6b7280, #4b5563); }
-        .cal-day { transition: all 0.15s; }
-        .cal-day:hover:not(.disabled) { background: rgba(59, 130, 246, 0.15); }
-        .cal-logged { background: rgba(16, 185, 129, 0.12) !important; border: 1px solid rgba(16, 185, 129, 0.3); }
-        .cal-holiday { background: rgba(239, 68, 68, 0.12) !important; }
-        .cal-event { background: rgba(139, 92, 246, 0.12) !important; }
-        .cal-selected { background: rgba(59, 130, 246, 0.25) !important; border: 1px solid rgba(59, 130, 246, 0.5); }
-        .cal-today { box-shadow: inset 0 0 0 2px #3b82f6; }
-        @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); } 50% { box-shadow: 0 0 12px 4px rgba(239, 68, 68, 0.1); } }
-        .danger-pulse { animation: pulse-red 2s infinite; }
-        input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #24242f inset !important; -webkit-text-fill-color: #fff !important; }
-        .subject-chip { transition: all 0.15s; }
-        .subject-chip:hover { transform: scale(1.02); }
+        * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: #08080c; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 2px; }
+        .glass { background: rgba(22, 22, 31, 0.95); border: 1px solid rgba(255,255,255,0.03); }
+        .glow-green { box-shadow: 0 0 12px rgba(16, 185, 129, 0.15); }
+        .glow-red { box-shadow: 0 0 12px rgba(239, 68, 68, 0.15); }
+        .cal-cell { transition: all 0.1s; }
+        .cal-cell:active { transform: scale(0.95); }
+        .cal-logged { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.25); }
+        .cal-holiday { background: rgba(239, 68, 68, 0.1); }
+        .cal-event { background: rgba(139, 92, 246, 0.1); }
+        .cal-selected { background: rgba(59, 130, 246, 0.2) !important; border-color: rgba(59, 130, 246, 0.4) !important; }
+        .cal-today { box-shadow: inset 0 0 0 1.5px #3b82f6; }
+        .status-p { background: linear-gradient(135deg, #10b981, #059669); }
+        .status-a { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .status-c { background: linear-gradient(135deg, #4b5563, #374151); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .saving { animation: pulse 1s infinite; }
+        input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px #1e1e2a inset !important; -webkit-text-fill-color: #fff !important; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .btn { transition: all 0.15s; }
+        .btn:active { transform: scale(0.97); }
     </style>
 </head>
-<body class="text-gray-100">
+<body class="text-gray-100 min-h-screen">
 
     <!-- AUTH -->
-    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4">
-        <div class="glass rounded-2xl p-6 max-w-sm w-full">
-            <div class="text-center mb-6">
-                <div class="w-14 h-14 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                    </svg>
+    <div id="auth" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass rounded-2xl p-6 w-full max-w-xs">
+            <div class="text-center mb-5">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                 </div>
-                <h1 class="text-xl font-bold">Manipal Attendance</h1>
-                <p class="text-gray-500 text-xs mt-1">Batch D2</p>
+                <h1 class="font-bold text-lg">Manipal Attendance</h1>
+                <p class="text-[11px] text-gray-500 mt-0.5">Batch D2 • Semester Tracker</p>
             </div>
             
-            <div class="flex mb-5 bg-dark-700 rounded-lg p-1 text-sm">
-                <button onclick="showAuthTab('login')" id="loginTab" class="flex-1 py-1.5 rounded-md font-medium transition-all bg-blue-500">Login</button>
-                <button onclick="showAuthTab('signup')" id="signupTab" class="flex-1 py-1.5 rounded-md font-medium transition-all text-gray-400">Sign Up</button>
+            <div class="flex mb-4 bg-dark-700 rounded-lg p-0.5 text-xs">
+                <button onclick="authTab('login')" id="tabLogin" class="flex-1 py-1.5 rounded-md font-medium bg-blue-500">Login</button>
+                <button onclick="authTab('signup')" id="tabSignup" class="flex-1 py-1.5 rounded-md font-medium text-gray-400">Sign Up</button>
             </div>
             
-            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-3">
-                <input type="email" id="loginEmail" required class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email">
-                <input type="password" id="loginPassword" required class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Password">
-                <button type="submit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 font-medium text-sm">Login</button>
+            <form id="formLogin" onsubmit="login(event)" class="space-y-2.5">
+                <input type="email" id="emailL" required class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Email">
+                <input type="password" id="passL" required class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Password">
+                <button class="btn w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-600 font-medium text-sm">Login</button>
             </form>
             
-            <form id="signupForm" onsubmit="handleSignup(event)" class="space-y-3 hidden">
-                <input type="text" id="signupName" required class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Name">
-                <input type="email" id="signupEmail" required class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Email">
-                <input type="password" id="signupPassword" required minlength="6" class="w-full px-3 py-2.5 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Password (min 6)">
-                <button type="submit" class="w-full py-2.5 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 font-medium text-sm">Create Account</button>
+            <form id="formSignup" onsubmit="signup(event)" class="space-y-2.5 hidden">
+                <input type="text" id="nameS" required class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Name">
+                <input type="email" id="emailS" required class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Email">
+                <input type="password" id="passS" required minlength="6" class="w-full px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-sm focus:outline-none focus:border-blue-500" placeholder="Password (min 6)">
+                <button class="btn w-full py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-600 font-medium text-sm">Create Account</button>
             </form>
             
-            <p id="authError" class="text-red-400 text-xs mt-3 text-center hidden"></p>
+            <p id="authErr" class="text-red-400 text-[11px] mt-2 text-center hidden"></p>
         </div>
     </div>
 
-    <!-- MAIN APP -->
-    <div id="mainApp" class="hidden min-h-screen pb-16">
+    <!-- APP -->
+    <div id="app" class="hidden min-h-screen pb-14">
         
         <!-- Header -->
-        <header class="glass sticky top-0 z-50 px-4 py-2.5 border-b border-white/5">
-            <div class="max-w-2xl mx-auto flex items-center justify-between">
+        <header class="glass sticky top-0 z-40 px-3 py-2 border-b border-white/5">
+            <div class="max-w-lg mx-auto flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                        </svg>
+                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </div>
-                    <div>
-                        <p class="text-sm font-semibold leading-tight">Attendance</p>
-                        <p class="text-xs text-gray-500" id="headerUser"></p>
+                    <div class="leading-tight">
+                        <p class="text-sm font-semibold">Attendance</p>
+                        <p class="text-[10px] text-gray-500" id="hdrUser"></p>
                     </div>
                 </div>
-                <div class="flex items-center gap-1">
-                    <button onclick="showCalendarModal()" class="p-2 rounded-lg hover:bg-dark-600 transition-colors" title="Calendar Events">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    </button>
-                    <button onclick="signOut()" class="p-2 rounded-lg hover:bg-dark-600 transition-colors" title="Sign Out">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                    </button>
+                <div class="flex gap-1">
+                    <button onclick="openCal()" class="p-1.5 rounded-lg hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></button>
+                    <button onclick="logout()" class="p-1.5 rounded-lg hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg></button>
                 </div>
             </div>
         </header>
         
-        <main class="max-w-2xl mx-auto p-3 space-y-4">
+        <main class="max-w-lg mx-auto p-3 space-y-3">
             
-            <!-- Stats Row -->
+            <!-- Stats -->
             <div class="grid grid-cols-4 gap-2">
-                <div class="glass rounded-xl p-2.5 text-center">
-                    <p class="text-lg font-bold text-blue-400" id="statOverall">--</p>
-                    <p class="text-[10px] text-gray-500">Overall</p>
+                <div class="glass rounded-xl p-2 text-center">
+                    <p class="text-base font-bold text-blue-400" id="sO">-</p>
+                    <p class="text-[9px] text-gray-500">Overall</p>
                 </div>
-                <div class="glass rounded-xl p-2.5 text-center">
-                    <p class="text-lg font-bold text-green-400" id="statAttended">--</p>
-                    <p class="text-[10px] text-gray-500">Attended</p>
+                <div class="glass rounded-xl p-2 text-center">
+                    <p class="text-base font-bold text-emerald-400" id="sA">-</p>
+                    <p class="text-[9px] text-gray-500">Attended</p>
                 </div>
-                <div class="glass rounded-xl p-2.5 text-center">
-                    <p class="text-lg font-bold text-yellow-400" id="statHeld">--</p>
-                    <p class="text-[10px] text-gray-500">Held</p>
+                <div class="glass rounded-xl p-2 text-center">
+                    <p class="text-base font-bold text-amber-400" id="sH">-</p>
+                    <p class="text-[9px] text-gray-500">Held</p>
                 </div>
-                <div class="glass rounded-xl p-2.5 text-center">
-                    <p class="text-lg font-bold text-purple-400" id="statSemester">--</p>
-                    <p class="text-[10px] text-gray-500">Semester</p>
+                <div class="glass rounded-xl p-2 text-center">
+                    <p class="text-base font-bold text-violet-400" id="sS">-</p>
+                    <p class="text-[9px] text-gray-500">Semester</p>
                 </div>
             </div>
 
             <!-- Calendar -->
             <div class="glass rounded-xl p-3">
-                <div class="flex items-center justify-between mb-3">
-                    <button onclick="changeMonth(-1)" class="p-1.5 rounded hover:bg-dark-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-                    </button>
-                    <h2 class="text-sm font-semibold" id="calMonth"></h2>
-                    <button onclick="changeMonth(1)" class="p-1.5 rounded hover:bg-dark-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
+                <div class="flex items-center justify-between mb-2">
+                    <button onclick="chgMonth(-1)" class="p-1 rounded hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg></button>
+                    <span class="text-xs font-semibold" id="calTitle"></span>
+                    <button onclick="chgMonth(1)" class="p-1 rounded hover:bg-dark-600 btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></button>
                 </div>
-                <div class="grid grid-cols-7 gap-1 text-center text-[10px] text-gray-500 mb-1">
+                <div class="grid grid-cols-7 gap-0.5 text-center text-[9px] text-gray-500 mb-1">
                     <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                 </div>
-                <div id="calGrid" class="grid grid-cols-7 gap-1"></div>
-                <div class="flex gap-3 mt-2 text-[10px] text-gray-500">
-                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-green-500/40"></span>Logged</span>
-                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-red-500/40"></span>Holiday</span>
-                    <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-sm bg-purple-500/40"></span>Event</span>
-                </div>
+                <div id="calGrid" class="grid grid-cols-7 gap-0.5"></div>
             </div>
 
             <!-- Day Editor -->
-            <div class="glass rounded-xl p-3" id="dayEditor">
-                <div class="flex items-center justify-between mb-3">
+            <div class="glass rounded-xl p-3">
+                <div class="flex items-center justify-between mb-2">
                     <div>
-                        <h3 class="text-sm font-semibold" id="dayTitle">Select a day</h3>
-                        <p class="text-xs text-gray-500" id="daySubtitle"></p>
+                        <h3 class="text-sm font-semibold" id="dayTitle">-</h3>
+                        <p class="text-[10px] text-gray-500" id="daySub"></p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="showAddClassModal()" id="addClassBtn" class="hidden p-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 transition-colors" title="Add/Remove Classes">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                        </button>
-                    </div>
+                    <button onclick="openAddClass()" id="btnAdd" class="hidden p-1.5 rounded-lg bg-dark-600 hover:bg-dark-500 btn" title="Add Class">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    </button>
                 </div>
                 
-                <div id="dayClasses" class="space-y-2"></div>
+                <div id="dayList" class="space-y-1.5"></div>
                 
-                <div id="noClasses" class="hidden text-center py-4">
-                    <p class="text-2xl mb-1">🎉</p>
-                    <p class="text-xs text-gray-500" id="noClassesReason">No classes</p>
+                <div id="dayEmpty" class="hidden text-center py-4">
+                    <p class="text-xl mb-1">🎉</p>
+                    <p class="text-[10px] text-gray-500" id="emptyReason">No classes</p>
                 </div>
                 
-                <button id="saveBtn" onclick="saveDay()" class="hidden w-full mt-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 text-sm font-medium">
+                <button id="btnSave" onclick="saveDay()" class="hidden w-full mt-3 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-violet-600 text-xs font-medium btn">
                     Save
                 </button>
             </div>
 
-            <!-- Subject Cards -->
+            <!-- Subjects -->
             <div>
                 <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold">Subjects</h3>
-                    <button onclick="toggleSubjectView()" class="text-xs text-blue-400" id="subjectToggle">Expand</button>
+                    <h3 class="text-xs font-semibold">Subjects</h3>
+                    <button onclick="toggleSubj()" class="text-[10px] text-blue-400" id="subjToggle">Details</button>
                 </div>
-                <div id="subjectCards" class="grid grid-cols-2 gap-2"></div>
+                <div id="subjGrid" class="grid grid-cols-2 gap-1.5"></div>
             </div>
 
-            <!-- Bulk Entry -->
+            <!-- Bulk -->
             <div class="glass rounded-xl p-3">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold">Quick Bulk Entry</h3>
-                    <button onclick="toggleBulk()" class="text-xs text-blue-400" id="bulkToggle">Show</button>
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-semibold">Quick Bulk Entry</h3>
+                    <button onclick="toggleBulk()" class="text-[10px] text-blue-400" id="bulkToggle">Show</button>
                 </div>
-                <div id="bulkContent" class="hidden">
-                    <p class="text-xs text-gray-500 mb-2">Select unlogged days from past 30 days:</p>
-                    <div id="bulkDates" class="grid grid-cols-3 gap-1.5 mb-3 max-h-32 overflow-y-auto"></div>
-                    <button onclick="bulkPresent()" class="w-full py-2 rounded-lg bg-green-500/20 text-green-400 text-xs font-medium hover:bg-green-500/30">
-                        ✓ Mark Selected as Present
-                    </button>
+                <div id="bulkBox" class="hidden mt-2">
+                    <p class="text-[10px] text-gray-500 mb-2">Unlogged days (last 30):</p>
+                    <div id="bulkList" class="flex flex-wrap gap-1 mb-2 max-h-24 overflow-y-auto hide-scroll"></div>
+                    <button onclick="bulkSave()" class="w-full py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 text-[10px] font-medium btn hover:bg-emerald-500/30">✓ Mark All Present</button>
                 </div>
             </div>
             
         </main>
 
-        <!-- Bottom Nav -->
-        <nav class="fixed bottom-0 left-0 right-0 glass border-t border-white/5 px-4 py-2">
-            <div class="max-w-2xl mx-auto flex justify-around">
-                <button onclick="goToday()" class="flex flex-col items-center gap-0.5 text-blue-400 p-1">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span class="text-[10px]">Today</span>
+        <!-- Nav -->
+        <nav class="fixed bottom-0 inset-x-0 glass border-t border-white/5">
+            <div class="max-w-lg mx-auto flex justify-around py-1.5">
+                <button onclick="goToday()" class="flex flex-col items-center p-1 text-blue-400 btn">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span class="text-[9px]">Today</span>
                 </button>
-                <button onclick="showBulk()" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-white p-1">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                    <span class="text-[10px]">Bulk</span>
+                <button onclick="showBulk()" class="flex flex-col items-center p-1 text-gray-400 hover:text-white btn">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                    <span class="text-[9px]">Bulk</span>
                 </button>
-                <button onclick="showResetModal()" class="flex flex-col items-center gap-0.5 text-gray-400 hover:text-white p-1">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    <span class="text-[10px]">Reset</span>
+                <button onclick="openReset()" class="flex flex-col items-center p-1 text-gray-400 hover:text-white btn">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span class="text-[9px]">Reset</span>
                 </button>
             </div>
         </nav>
     </div>
 
-    <!-- ADD/EDIT CLASSES MODAL -->
-    <div id="addClassModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
-        <div class="glass rounded-xl p-4 max-w-sm w-full">
+    <!-- ADD CLASS MODAL -->
+    <div id="modalAdd" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[70vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-semibold">Edit Classes</h3>
-                <button onclick="hideAddClassModal()" class="p-1 hover:bg-dark-600 rounded">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <h3 class="text-sm font-semibold">Add / Edit Classes</h3>
+                <button onclick="closeAddClass()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
-            <p class="text-xs text-gray-500 mb-3">Toggle subjects for this day. Use this for class cancellations or exchanges.</p>
-            <div id="allSubjectsList" class="grid grid-cols-2 gap-2 mb-3"></div>
-            <button onclick="applyClassChanges()" class="w-full py-2 rounded-lg bg-blue-500 text-sm font-medium">Apply Changes</button>
+            <p class="text-[10px] text-gray-500 mb-3">Tap + to add a class. Tap multiple times for extra classes of the same subject.</p>
+            <div id="addList" class="space-y-1.5"></div>
+            <button onclick="applyAdd()" class="w-full mt-3 py-2 rounded-lg bg-blue-500 text-xs font-medium btn">Apply</button>
         </div>
     </div>
 
     <!-- CALENDAR EVENTS MODAL -->
-    <div id="calModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 overflow-y-auto">
-        <div class="glass rounded-xl p-4 max-w-md w-full my-4">
+    <div id="modalCal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-3">
+        <div class="glass rounded-t-2xl sm:rounded-2xl p-4 w-full max-w-sm max-h-[80vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-semibold">📅 Calendar Events</h3>
-                <button onclick="hideCalendarModal()" class="p-1 hover:bg-dark-600 rounded">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
+                <button onclick="closeCal()" class="p-1 hover:bg-dark-600 rounded btn"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
             </div>
             
             <div class="bg-dark-700 rounded-lg p-3 mb-3">
-                <p class="text-xs font-medium mb-2">Add Event</p>
-                <div class="grid grid-cols-2 gap-2 mb-2">
-                    <input type="date" id="evtDate" class="px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
-                    <select id="evtType" class="px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
+                <p class="text-[10px] font-medium mb-2">Add Event</p>
+                <div class="flex gap-2 mb-2">
+                    <input type="date" id="evDate" class="flex-1 px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] focus:outline-none focus:border-blue-500">
+                    <select id="evType" onchange="evTypeChg()" class="px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] focus:outline-none focus:border-blue-500">
                         <option value="holiday">Holiday</option>
                         <option value="exam">Exam</option>
-                        <option value="exchange">Day Exchange</option>
+                        <option value="exchange">Exchange</option>
                         <option value="halfday">Half Day</option>
                     </select>
                 </div>
-                <input type="text" id="evtName" placeholder="Event name" class="w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-xs mb-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                <div id="exchangeSelect" class="hidden mb-2">
-                    <select id="evtExchange" class="w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
-                        <option value="0">Follows Sunday</option>
-                        <option value="1">Follows Monday</option>
-                        <option value="2">Follows Tuesday</option>
-                        <option value="3">Follows Wednesday</option>
-                        <option value="4">Follows Thursday</option>
-                        <option value="5">Follows Friday</option>
-                        <option value="6">Follows Saturday</option>
-                    </select>
-                </div>
-                <button onclick="addEvent()" class="w-full py-1.5 rounded bg-blue-500 text-xs font-medium">Add</button>
+                <input type="text" id="evName" placeholder="Name" class="w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] mb-2 focus:outline-none focus:border-blue-500">
+                <select id="evFollow" class="hidden w-full px-2 py-1.5 bg-dark-600 border border-dark-500 rounded text-[11px] mb-2 focus:outline-none focus:border-blue-500">
+                    <option value="0">Follows Sunday</option><option value="1">Follows Monday</option><option value="2">Follows Tuesday</option>
+                    <option value="3">Follows Wednesday</option><option value="4">Follows Thursday</option><option value="5">Follows Friday</option><option value="6">Follows Saturday</option>
+                </select>
+                <button onclick="addEv()" class="w-full py-1.5 rounded bg-blue-500 text-[10px] font-medium btn">Add Event</button>
             </div>
             
-            <div>
-                <p class="text-xs font-medium mb-2">Events</p>
-                <div id="eventsList" class="space-y-1.5 max-h-48 overflow-y-auto"></div>
-            </div>
+            <p class="text-[10px] font-medium mb-1.5">Events</p>
+            <div id="evList" class="space-y-1"></div>
         </div>
     </div>
 
     <!-- RESET MODAL -->
-    <div id="resetModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
-        <div class="glass rounded-xl p-4 max-w-xs w-full">
-            <h3 class="text-sm font-semibold text-red-400 mb-2">⚠️ Reset All Data?</h3>
-            <p class="text-xs text-gray-500 mb-3">Deletes all logs. Calendar events kept.</p>
+    <div id="modalReset" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3">
+        <div class="glass rounded-2xl p-4 w-full max-w-xs">
+            <h3 class="text-sm font-semibold text-red-400 mb-2">⚠️ Reset All?</h3>
+            <p class="text-[10px] text-gray-500 mb-3">Deletes all attendance logs. Calendar events are kept.</p>
             <div class="flex gap-2">
-                <button onclick="hideResetModal()" class="flex-1 py-2 rounded-lg bg-dark-600 text-xs">Cancel</button>
-                <button onclick="resetData()" class="flex-1 py-2 rounded-lg bg-red-500 text-xs font-medium">Reset</button>
+                <button onclick="closeReset()" class="flex-1 py-2 rounded-lg bg-dark-600 text-xs btn">Cancel</button>
+                <button onclick="doReset()" class="flex-1 py-2 rounded-lg bg-red-500 text-xs font-medium btn">Reset</button>
             </div>
         </div>
     </div>
 
     <!-- TOAST -->
-    <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 bg-dark-600 px-4 py-2 rounded-lg shadow-lg transform translate-y-10 opacity-0 transition-all duration-200 z-50 text-xs"></div>
+    <div id="toast" class="fixed bottom-16 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg bg-dark-600 text-[11px] shadow-xl transform translate-y-8 opacity-0 transition-all z-50"></div>
 
     <script>
         // =====================================================================
-        // CONFIG
+        // FIREBASE
         // =====================================================================
-        const firebaseConfig = {
+        firebase.initializeApp({
             apiKey: "AIzaSyCzL18eCQXeLVYGAjhQJE0nV86n86D26qM",
             authDomain: "flight-log-4d48d.firebaseapp.com",
             projectId: "flight-log-4d48d",
             storageBucket: "flight-log-4d48d.firebasestorage.app",
             messagingSenderId: "51886363025",
             appId: "1:51886363025:web:312e07b3e40b8f81bfca30"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        });
+        const auth = firebase.auth(), db = firebase.firestore();
 
         // =====================================================================
-        // DATA (Labs = 12)
+        // DATA CONFIG
         // =====================================================================
-        const LIMITS = {
-            "OS": 36, "DBS": 48, "DAA": 48, "PAO": 36, "IAI": 36,
-            "DBSL": 12, "OSDL": 12, "OSL": 12
-        };
-        
-        const NAMES = {
-            "OS": "Operating Systems", "DBS": "Database Systems",
-            "DAA": "Design & Analysis of Algorithms", "PAO": "Principles of AI & Optimization",
-            "IAI": "Intro to AI", "DBSL": "DBS Lab", "OSDL": "OS Design Lab", "OSL": "OS Lab"
-        };
-        
-        const SCHEDULE = {
-            0: [], 1: ["OS", "DBS"], 2: ["DAA", "OS", "PAO", "IAI", "DBSL"],
-            3: ["IAI", "DBS", "DAA"], 4: ["PAO", "DBS", "IAI", "OSDL"],
-            5: ["OSL", "DAA", "OS"], 6: ["PAO", "DBS", "DAA"]
-        };
-        
+        const LIMITS = { OS: 36, DBS: 48, DAA: 48, PAO: 36, IAI: 36, DBSL: 12, OSDL: 12, OSL: 12 };
+        const NAMES = { OS: "Operating Systems", DBS: "Database Systems", DAA: "Design & Analysis of Algorithms", PAO: "Principles of AI & Optimization", IAI: "Intro to AI", DBSL: "DBS Lab", OSDL: "OS Design Lab", OSL: "OS Lab" };
+        const SCHED = { 0: [], 1: ["OS", "DBS"], 2: ["DAA", "OS", "PAO", "IAI", "DBSL"], 3: ["IAI", "DBS", "DAA"], 4: ["PAO", "DBS", "IAI", "OSDL"], 5: ["OSL", "DAA", "OS"], 6: ["PAO", "DBS", "DAA"] };
         const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         const LABS = ["DBSL", "OSDL", "OSL"];
+        const SUBJECTS = Object.keys(LIMITS);
         
-        const DEFAULT_CALENDAR = {
+        const CAL_DEFAULT = {
             "2026-01-26": { type: "holiday", name: "Republic Day" },
-            "2026-02-26": { type: "halfday", name: "Revels" },
-            "2026-02-27": { type: "halfday", name: "Revels" },
-            "2026-02-28": { type: "halfday", name: "Revels" },
-            "2026-03-01": { type: "halfday", name: "Revels" },
-            "2026-03-10": { type: "holiday", name: "Holi" },
-            "2026-03-30": { type: "holiday", name: "Idul Fitr" },
-            "2026-04-03": { type: "holiday", name: "Good Friday" },
-            "2026-04-14": { type: "holiday", name: "Ambedkar Jayanti" },
-            "2026-05-01": { type: "holiday", name: "May Day" },
-            "2026-08-15": { type: "holiday", name: "Independence Day" },
-            "2026-10-02": { type: "holiday", name: "Gandhi Jayanti" },
-            "2026-10-20": { type: "holiday", name: "Dussehra" },
-            "2026-11-10": { type: "holiday", name: "Diwali" },
-            "2026-12-25": { type: "holiday", name: "Christmas" },
+            "2026-02-26": { type: "halfday", name: "Revels" }, "2026-02-27": { type: "halfday", name: "Revels" },
+            "2026-02-28": { type: "halfday", name: "Revels" }, "2026-03-01": { type: "halfday", name: "Revels" },
+            "2026-03-10": { type: "holiday", name: "Holi" }, "2026-03-30": { type: "holiday", name: "Idul Fitr" },
+            "2026-04-03": { type: "holiday", name: "Good Friday" }, "2026-04-14": { type: "holiday", name: "Ambedkar Jayanti" },
+            "2026-05-01": { type: "holiday", name: "May Day" }, "2026-08-15": { type: "holiday", name: "Independence Day" },
+            "2026-10-02": { type: "holiday", name: "Gandhi Jayanti" }, "2026-10-20": { type: "holiday", name: "Dussehra" },
+            "2026-11-10": { type: "holiday", name: "Diwali" }, "2026-12-25": { type: "holiday", name: "Christmas" }
         };
 
         // =====================================================================
         // STATE
         // =====================================================================
-        let user = null;
-        let data = { attendance: {}, logs: {}, calendar: {} };
-        let selDate = null;
-        let selLog = null;
-        let curMonth = new Date();
-        let dirty = false;
-        let bulkSel = new Set();
-        let subjectExpanded = false;
+        let user = null, data = { att: {}, logs: {}, cal: {} };
+        let selDate = null, selClasses = []; // Array of {subj, status}
+        let curMonth = new Date(), subjExp = false, dirty = false, bulkSet = new Set();
+        let tempClasses = []; // For add modal
 
         // =====================================================================
         // UTILS
         // =====================================================================
-        const dateId = d => d.toISOString().split('T')[0];
-        const parseD = s => new Date(s + 'T00:00:00');
-        const today = () => dateId(new Date());
-        const shortDate = s => parseD(s).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        
-        function toast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.remove('translate-y-10', 'opacity-0');
-            setTimeout(() => t.classList.add('translate-y-10', 'opacity-0'), 2000);
-        }
+        const toId = d => d.toISOString().split('T')[0];
+        const fromId = s => new Date(s + 'T00:00:00');
+        const today = () => toId(new Date());
+        const short = s => fromId(s).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        const toast = m => { const t = document.getElementById('toast'); t.textContent = m; t.classList.remove('translate-y-8', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-8', 'opacity-0'), 2000); };
 
         // =====================================================================
         // AUTH
         // =====================================================================
-        function showAuthTab(tab) {
-            document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
-            document.getElementById('signupForm').classList.toggle('hidden', tab !== 'signup');
-            document.getElementById('loginTab').className = `flex-1 py-1.5 rounded-md font-medium transition-all ${tab === 'login' ? 'bg-blue-500' : 'text-gray-400'}`;
-            document.getElementById('signupTab').className = `flex-1 py-1.5 rounded-md font-medium transition-all ${tab === 'signup' ? 'bg-blue-500' : 'text-gray-400'}`;
-            document.getElementById('authError').classList.add('hidden');
+        function authTab(t) {
+            document.getElementById('formLogin').classList.toggle('hidden', t !== 'login');
+            document.getElementById('formSignup').classList.toggle('hidden', t !== 'signup');
+            document.getElementById('tabLogin').className = `flex-1 py-1.5 rounded-md font-medium ${t === 'login' ? 'bg-blue-500' : 'text-gray-400'}`;
+            document.getElementById('tabSignup').className = `flex-1 py-1.5 rounded-md font-medium ${t === 'signup' ? 'bg-blue-500' : 'text-gray-400'}`;
+            document.getElementById('authErr').classList.add('hidden');
         }
+        const authErr = m => { const e = document.getElementById('authErr'); e.textContent = m.replace(/Firebase: |( \(auth.*\))/g, ''); e.classList.remove('hidden'); };
         
-        function authErr(msg) {
-            const e = document.getElementById('authError');
-            e.textContent = msg.replace('Firebase: ', '').replace(/ \(auth.*\)/, '');
-            e.classList.remove('hidden');
+        async function login(e) {
+            e.preventDefault();
+            try { await auth.signInWithEmailAndPassword(document.getElementById('emailL').value, document.getElementById('passL').value); }
+            catch (err) { authErr(err.message); }
         }
-        
-        async function handleLogin(e) {
+        async function signup(e) {
             e.preventDefault();
             try {
-                await auth.signInWithEmailAndPassword(
-                    document.getElementById('loginEmail').value,
-                    document.getElementById('loginPassword').value
-                );
+                const c = await auth.createUserWithEmailAndPassword(document.getElementById('emailS').value, document.getElementById('passS').value);
+                await c.user.updateProfile({ displayName: document.getElementById('nameS').value });
+                await initUser(c.user);
             } catch (err) { authErr(err.message); }
         }
-        
-        async function handleSignup(e) {
-            e.preventDefault();
-            try {
-                const cred = await auth.createUserWithEmailAndPassword(
-                    document.getElementById('signupEmail').value,
-                    document.getElementById('signupPassword').value
-                );
-                await cred.user.updateProfile({ displayName: document.getElementById('signupName').value });
-                await initUser(cred.user);
-            } catch (err) { authErr(err.message); }
-        }
-        
-        async function signOut() {
-            await auth.signOut();
-            toast('Signed out');
-        }
+        const logout = async () => { await auth.signOut(); toast('Signed out'); };
         
         auth.onAuthStateChanged(async u => {
             if (u) {
                 user = u;
-                document.getElementById('authScreen').classList.add('hidden');
-                document.getElementById('mainApp').classList.remove('hidden');
-                document.getElementById('headerUser').textContent = u.displayName || u.email?.split('@')[0];
+                document.getElementById('auth').classList.add('hidden');
+                document.getElementById('app').classList.remove('hidden');
+                document.getElementById('hdrUser').textContent = u.displayName || u.email?.split('@')[0];
                 await loadData();
                 selectDay(today());
                 render();
             } else {
                 user = null;
-                document.getElementById('authScreen').classList.remove('hidden');
-                document.getElementById('mainApp').classList.add('hidden');
+                document.getElementById('auth').classList.remove('hidden');
+                document.getElementById('app').classList.add('hidden');
             }
         });
 
         // =====================================================================
-        // DATA
+        // DATABASE
         // =====================================================================
         async function initUser(u) {
-            const att = {};
-            Object.keys(LIMITS).forEach(s => att[s] = { attended: 0, held: 0 });
-            await db.collection('attendance_users').doc(u.uid).set({
-                email: u.email, displayName: u.displayName,
-                attendance: att, calendar: { ...DEFAULT_CALENDAR },
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            const att = {}; SUBJECTS.forEach(s => att[s] = { a: 0, h: 0 });
+            await db.collection('att_users').doc(u.uid).set({ email: u.email, name: u.displayName, att, cal: { ...CAL_DEFAULT }, created: firebase.firestore.FieldValue.serverTimestamp() });
         }
         
         async function loadData() {
-            const doc = await db.collection('attendance_users').doc(user.uid).get();
+            const doc = await db.collection('att_users').doc(user.uid).get();
             if (!doc.exists) { await initUser(user); return loadData(); }
-            
             data = doc.data();
-            if (!data.calendar) data.calendar = { ...DEFAULT_CALENDAR };
-            if (!data.attendance) {
-                data.attendance = {};
-                Object.keys(LIMITS).forEach(s => data.attendance[s] = { attended: 0, held: 0 });
-            }
-            
-            const logs = await db.collection('attendance_users').doc(user.uid).collection('logs').get();
-            data.logs = {};
-            logs.forEach(d => data.logs[d.id] = d.data());
+            if (!data.cal) data.cal = { ...CAL_DEFAULT };
+            if (!data.att) { data.att = {}; SUBJECTS.forEach(s => data.att[s] = { a: 0, h: 0 }); }
+            const logs = await db.collection('att_users').doc(user.uid).collection('logs').get();
+            data.logs = {}; logs.forEach(d => data.logs[d.id] = d.data());
         }
         
-        async function saveData() {
-            await db.collection('attendance_users').doc(user.uid).update({
-                attendance: data.attendance, calendar: data.calendar
-            });
-        }
-        
-        async function saveLog(id, log) {
-            await db.collection('attendance_users').doc(user.uid).collection('logs').doc(id).set(log);
-            data.logs[id] = log;
-        }
+        const saveData = () => db.collection('att_users').doc(user.uid).update({ att: data.att, cal: data.cal });
+        const saveLog = async (id, log) => { await db.collection('att_users').doc(user.uid).collection('logs').doc(id).set(log); data.logs[id] = log; };
         
         function recalc() {
-            Object.keys(LIMITS).forEach(s => data.attendance[s] = { attended: 0, held: 0 });
+            SUBJECTS.forEach(s => data.att[s] = { a: 0, h: 0 });
             Object.values(data.logs).forEach(log => {
-                Object.entries(log.entries || {}).forEach(([s, st]) => {
-                    if (!data.attendance[s]) data.attendance[s] = { attended: 0, held: 0 };
-                    if (st === 'present') { data.attendance[s].attended++; data.attendance[s].held++; }
-                    else if (st === 'absent') { data.attendance[s].held++; }
+                (log.classes || []).forEach(c => {
+                    if (!data.att[c.subj]) data.att[c.subj] = { a: 0, h: 0 };
+                    if (c.status === 'P') { data.att[c.subj].a++; data.att[c.subj].h++; }
+                    else if (c.status === 'A') { data.att[c.subj].h++; }
                 });
             });
         }
 
         // =====================================================================
-        // SCHEDULE LOGIC
+        // SCHEDULE
         // =====================================================================
-        function getSchedule(id) {
-            const evt = data.calendar[id];
-            const day = parseD(id).getDay();
-            
-            if (evt) {
-                if (evt.type === 'holiday' || evt.type === 'exam') 
-                    return { subjects: [], reason: evt.name, type: evt.type };
-                if (evt.type === 'exchange' && evt.followsDay !== undefined)
-                    return { subjects: [...(SCHEDULE[evt.followsDay] || [])], reason: `${evt.name} (${DAYS[evt.followsDay]})`, type: 'exchange' };
-                if (evt.type === 'halfday')
-                    return { subjects: (SCHEDULE[day] || []).filter(s => !LABS.includes(s)), reason: evt.name, type: 'halfday' };
+        function getSched(id) {
+            const ev = data.cal[id], day = fromId(id).getDay();
+            if (ev) {
+                if (ev.type === 'holiday' || ev.type === 'exam') return { subjs: [], reason: ev.name };
+                if (ev.type === 'exchange' && ev.follows !== undefined) return { subjs: [...(SCHED[ev.follows] || [])], reason: `${ev.name} (${DAYS[ev.follows]})` };
+                if (ev.type === 'halfday') return { subjs: (SCHED[day] || []).filter(s => !LABS.includes(s)), reason: ev.name };
             }
-            
-            return { subjects: [...(SCHEDULE[day] || [])], reason: null, type: 'normal' };
+            return { subjs: [...(SCHED[day] || [])], reason: null };
         }
 
         // =====================================================================
         // RENDER
         // =====================================================================
-        function render() {
-            renderCal();
-            renderStats();
-            renderSubjects();
-            updateBulkDates();
-        }
+        function render() { renderCal(); renderStats(); renderSubj(); updateBulk(); }
         
         function renderCal() {
-            const grid = document.getElementById('calGrid');
-            const y = curMonth.getFullYear(), m = curMonth.getMonth();
-            document.getElementById('calMonth').textContent = curMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            
-            const first = new Date(y, m, 1).getDay();
-            const days = new Date(y, m + 1, 0).getDate();
-            const todayId = today();
-            
-            let html = '<div class="col-span-7"></div>'.repeat(0);
-            for (let i = 0; i < first; i++) html += '<div class="h-8"></div>';
-            
+            const g = document.getElementById('calGrid'), y = curMonth.getFullYear(), m = curMonth.getMonth();
+            document.getElementById('calTitle').textContent = curMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+            const first = new Date(y, m, 1).getDay(), days = new Date(y, m + 1, 0).getDate(), tid = today();
+            let h = ''; for (let i = 0; i < first; i++) h += '<div></div>';
             for (let d = 1; d <= days; d++) {
-                const id = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                const evt = data.calendar[id];
-                const logged = data.logs[id];
-                const isToday = id === todayId;
-                const isSel = id === selDate;
-                const isFuture = id > todayId;
-                
-                let cls = 'cal-day h-8 rounded text-xs flex items-center justify-center cursor-pointer';
-                if (isToday) cls += ' cal-today';
-                if (isSel) cls += ' cal-selected';
-                else if (logged) cls += ' cal-logged';
-                else if (evt?.type === 'holiday' || evt?.type === 'exam') cls += ' cal-holiday';
-                else if (evt) cls += ' cal-event';
-                if (isFuture) cls += ' text-gray-600';
-                
-                html += `<div class="${cls}" onclick="selectDay('${id}')" title="${evt?.name || ''}">${d}</div>`;
+                const id = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const ev = data.cal[id], logged = data.logs[id], isToday = id === tid, isSel = id === selDate, isFut = id > tid;
+                let c = 'cal-cell h-7 rounded text-[10px] flex items-center justify-center cursor-pointer border border-transparent';
+                if (isToday) c += ' cal-today';
+                if (isSel) c += ' cal-selected';
+                else if (logged) c += ' cal-logged';
+                else if (ev?.type === 'holiday' || ev?.type === 'exam') c += ' cal-holiday';
+                else if (ev) c += ' cal-event';
+                if (isFut) c += ' text-gray-600';
+                h += `<div class="${c}" onclick="selectDay('${id}')">${d}</div>`;
             }
-            
-            grid.innerHTML = html;
+            g.innerHTML = h;
         }
         
         function renderStats() {
-            let att = 0, held = 0, limit = 0;
-            Object.keys(LIMITS).forEach(s => {
-                const d = data.attendance[s] || { attended: 0, held: 0 };
-                att += d.attended; held += d.held; limit += LIMITS[s];
-            });
-            
-            document.getElementById('statOverall').textContent = held ? ((att / held) * 100).toFixed(0) + '%' : '100%';
-            document.getElementById('statAttended').textContent = att;
-            document.getElementById('statHeld').textContent = held;
-            document.getElementById('statSemester').textContent = ((held / limit) * 100).toFixed(0) + '%';
+            let a = 0, h = 0, lim = 0;
+            SUBJECTS.forEach(s => { const d = data.att[s] || { a: 0, h: 0 }; a += d.a; h += d.h; lim += LIMITS[s]; });
+            document.getElementById('sO').textContent = h ? Math.round(a / h * 100) + '%' : '100%';
+            document.getElementById('sA').textContent = a;
+            document.getElementById('sH').textContent = h;
+            document.getElementById('sS').textContent = Math.round(h / lim * 100) + '%';
         }
         
-        function renderSubjects() {
-            const c = document.getElementById('subjectCards');
-            const expanded = subjectExpanded;
-            
-            c.innerHTML = Object.entries(LIMITS).map(([s, limit]) => {
-                const d = data.attendance[s] || { attended: 0, held: 0 };
-                const pct = d.held ? ((d.attended / d.held) * 100) : 100;
-                const isLab = LABS.includes(s);
+        function renderSubj() {
+            const g = document.getElementById('subjGrid');
+            g.innerHTML = SUBJECTS.map(s => {
+                const d = data.att[s] || { a: 0, h: 0 }, pct = d.h ? d.a / d.h * 100 : 100, isLab = LABS.includes(s);
+                let status, stCls;
+                if (pct >= 75) { const b = Math.floor((d.a - 0.75 * d.h) / 0.75); status = b > 0 ? `+${b}` : '0'; stCls = 'text-emerald-400'; }
+                else { const n = Math.ceil((0.75 * d.h - d.a) / 0.25); status = `-${n}`; stCls = 'text-red-400'; }
+                const border = pct >= 75 ? 'border-emerald-500/20' : 'border-red-500/25';
+                const prog = pct >= 75 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500';
                 
-                let status, statusCls;
-                if (pct >= 75) {
-                    const bunk = Math.floor((d.attended - 0.75 * d.held) / 0.75);
-                    status = bunk > 0 ? `+${bunk}` : '0';
-                    statusCls = 'text-green-400';
-                } else {
-                    const need = Math.ceil((0.75 * d.held - d.attended) / 0.25);
-                    status = `-${need}`;
-                    statusCls = 'text-red-400';
-                }
-                
-                const border = pct >= 75 ? 'border-green-500/20' : 'border-red-500/30 danger-pulse';
-                const prog = pct >= 75 ? 'bg-green-500' : pct >= 60 ? 'bg-yellow-500' : 'bg-red-500';
-                
-                if (!expanded) {
-                    return `
-                        <div class="glass rounded-lg p-2 border ${border} subject-chip">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-xs font-medium">${s}</span>
-                                <span class="text-xs font-bold ${pct >= 75 ? 'text-green-400' : 'text-red-400'}">${pct.toFixed(0)}%</span>
-                            </div>
-                            <div class="h-1 bg-dark-600 rounded-full overflow-hidden">
-                                <div class="${prog} h-full rounded-full" style="width:${Math.min(pct, 100)}%"></div>
-                            </div>
-                            <div class="flex justify-between mt-1 text-[10px] text-gray-500">
-                                <span>${d.attended}/${d.held}</span>
-                                <span class="${statusCls}">${status}</span>
-                            </div>
+                if (!subjExp) return `
+                    <div class="glass rounded-lg p-2 border ${border}">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[11px] font-medium">${s}</span>
+                            <span class="text-[11px] font-bold ${pct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${Math.round(pct)}%</span>
                         </div>
-                    `;
-                } else {
-                    return `
-                        <div class="glass rounded-lg p-3 border ${border} subject-chip">
-                            <div class="flex items-center justify-between mb-2">
-                                <div>
-                                    <span class="text-sm font-semibold">${s}</span>
-                                    <span class="text-[10px] ml-1 px-1 py-0.5 rounded ${isLab ? 'bg-purple-500/20 text-purple-300' : 'bg-blue-500/20 text-blue-300'}">${isLab ? 'LAB' : 'LEC'}</span>
-                                </div>
-                                <span class="text-lg font-bold ${pct >= 75 ? 'text-green-400' : 'text-red-400'}">${pct.toFixed(0)}%</span>
-                            </div>
-                            <p class="text-[10px] text-gray-500 mb-2">${NAMES[s]}</p>
-                            <div class="relative h-1.5 bg-dark-600 rounded-full overflow-hidden mb-2">
-                                <div class="${prog} h-full rounded-full" style="width:${Math.min(pct, 100)}%"></div>
-                                <div class="absolute h-full w-px bg-white/30" style="left:75%"></div>
-                            </div>
-                            <div class="flex justify-between text-[10px]">
-                                <span class="text-gray-500">${d.attended}/${d.held} • ${d.held}/${limit} sem</span>
-                                <span class="${statusCls}">${pct >= 75 ? `Can bunk ${status.replace('+','')}` : `Need ${status.replace('-','')} more`}</span>
-                            </div>
+                        <div class="h-1 bg-dark-600 rounded-full overflow-hidden mb-1">
+                            <div class="${prog} h-full" style="width:${Math.min(pct,100)}%"></div>
                         </div>
-                    `;
-                }
+                        <div class="flex justify-between text-[9px] text-gray-500">
+                            <span>${d.a}/${d.h}</span>
+                            <span class="${stCls}">${status}</span>
+                        </div>
+                    </div>`;
+                
+                return `
+                    <div class="glass rounded-lg p-2.5 border ${border}">
+                        <div class="flex justify-between items-start mb-1.5">
+                            <div>
+                                <span class="text-xs font-semibold">${s}</span>
+                                <span class="text-[8px] ml-1 px-1 py-px rounded ${isLab ? 'bg-violet-500/20 text-violet-300' : 'bg-blue-500/20 text-blue-300'}">${isLab ? 'LAB' : 'LEC'}</span>
+                                <p class="text-[9px] text-gray-500 mt-0.5">${NAMES[s]}</p>
+                            </div>
+                            <span class="text-lg font-bold ${pct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${Math.round(pct)}%</span>
+                        </div>
+                        <div class="relative h-1 bg-dark-600 rounded-full overflow-hidden mb-1.5">
+                            <div class="${prog} h-full" style="width:${Math.min(pct,100)}%"></div>
+                            <div class="absolute h-full w-px bg-white/20" style="left:75%"></div>
+                        </div>
+                        <div class="flex justify-between text-[9px]">
+                            <span class="text-gray-500">${d.a}/${d.h} • ${d.h}/${LIMITS[s]}</span>
+                            <span class="${stCls}">${pct >= 75 ? `Bunk ${status.replace('+','')}` : `Need ${status.replace('-','')}`}</span>
+                        </div>
+                    </div>`;
             }).join('');
         }
         
-        function toggleSubjectView() {
-            subjectExpanded = !subjectExpanded;
-            document.getElementById('subjectToggle').textContent = subjectExpanded ? 'Collapse' : 'Expand';
-            renderSubjects();
-        }
+        function toggleSubj() { subjExp = !subjExp; document.getElementById('subjToggle').textContent = subjExp ? 'Simple' : 'Details'; renderSubj(); }
 
         // =====================================================================
         // DAY EDITOR
         // =====================================================================
         function selectDay(id) {
             selDate = id;
-            const todayId = today();
-            const isToday = id === todayId;
-            const isFuture = id > todayId;
+            const tid = today(), isToday = id === tid, isFut = id > tid;
+            document.getElementById('dayTitle').textContent = isToday ? 'Today' : short(id);
+            const sched = getSched(id);
+            document.getElementById('daySub').textContent = DAYS[fromId(id).getDay()] + (sched.reason ? ` • ${sched.reason}` : '');
             
-            document.getElementById('dayTitle').textContent = isToday ? "Today" : shortDate(id);
-            
-            const sched = getSchedule(id);
-            let sub = DAYS[parseD(id).getDay()];
-            if (sched.reason) sub += ` • ${sched.reason}`;
-            document.getElementById('daySubtitle').textContent = sub;
-            
-            // Load or create log
+            // Load or create classes array
             if (data.logs[id]) {
-                selLog = JSON.parse(JSON.stringify(data.logs[id]));
+                selClasses = JSON.parse(JSON.stringify(data.logs[id].classes || []));
             } else {
-                const entries = {};
-                sched.subjects.forEach(s => entries[s] = 'present');
-                selLog = { date: id, entries };
+                selClasses = sched.subjs.map(s => ({ subj: s, status: 'P' }));
             }
             
-            document.getElementById('addClassBtn').classList.toggle('hidden', isFuture);
-            renderDayClasses();
+            document.getElementById('btnAdd').classList.toggle('hidden', isFut);
+            renderDayList();
             renderCal();
             dirty = false;
         }
         
-        function renderDayClasses() {
-            const c = document.getElementById('dayClasses');
-            const noC = document.getElementById('noClasses');
-            const saveBtn = document.getElementById('saveBtn');
-            const entries = selLog?.entries || {};
-            const subjects = Object.keys(entries);
-            const isFuture = selDate > today();
+        function renderDayList() {
+            const list = document.getElementById('dayList'), empty = document.getElementById('dayEmpty'), btn = document.getElementById('btnSave');
+            const isFut = selDate > today();
             
-            if (subjects.length === 0) {
-                c.innerHTML = '';
-                noC.classList.remove('hidden');
-                const sched = getSchedule(selDate);
-                document.getElementById('noClassesReason').textContent = sched.reason || 'No classes';
-                saveBtn.classList.add('hidden');
+            if (!selClasses.length) {
+                list.innerHTML = '';
+                empty.classList.remove('hidden');
+                document.getElementById('emptyReason').textContent = getSched(selDate).reason || 'No classes';
+                btn.classList.add('hidden');
                 return;
             }
             
-            noC.classList.add('hidden');
-            saveBtn.classList.toggle('hidden', isFuture);
+            empty.classList.add('hidden');
+            btn.classList.toggle('hidden', isFut);
             
-            c.innerHTML = subjects.map(s => {
-                const st = entries[s];
+            list.innerHTML = selClasses.map((c, i) => `
+                <div class="flex items-center justify-between bg-dark-700 rounded-lg px-2.5 py-1.5">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-xs font-medium">${c.subj}</span>
+                        <span class="text-[9px] text-gray-500 truncate">${NAMES[c.subj] || ''}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="setStatus(${i},'P')" class="w-6 h-6 rounded text-[10px] font-semibold btn ${c.status === 'P' ? 'status-p text-white' : 'bg-dark-600 text-gray-400'}">P</button>
+                        <button onclick="setStatus(${i},'A')" class="w-6 h-6 rounded text-[10px] font-semibold btn ${c.status === 'A' ? 'status-a text-white' : 'bg-dark-600 text-gray-400'}">A</button>
+                        <button onclick="setStatus(${i},'C')" class="w-6 h-6 rounded text-[10px] font-semibold btn ${c.status === 'C' ? 'status-c text-white' : 'bg-dark-600 text-gray-400'}">C</button>
+                        <button onclick="removeClass(${i})" class="w-6 h-6 rounded bg-dark-600 text-gray-400 hover:text-red-400 btn flex items-center justify-center">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function setStatus(i, s) { selClasses[i].status = s; dirty = true; renderDayList(); }
+        function removeClass(i) { selClasses.splice(i, 1); dirty = true; renderDayList(); }
+        
+        async function saveDay() {
+            if (!selDate) return;
+            try {
+                await saveLog(selDate, { date: selDate, classes: selClasses });
+                recalc(); await saveData(); render(); dirty = false; toast('✓ Saved');
+            } catch (e) { console.error(e); toast('Error'); }
+        }
+        
+        function goToday() { curMonth = new Date(); selectDay(today()); render(); }
+
+        // =====================================================================
+        // ADD CLASS MODAL
+        // =====================================================================
+        function openAddClass() {
+            tempClasses = JSON.parse(JSON.stringify(selClasses));
+            renderAddList();
+            document.getElementById('modalAdd').classList.remove('hidden');
+        }
+        function closeAddClass() { document.getElementById('modalAdd').classList.add('hidden'); }
+        
+        function renderAddList() {
+            const list = document.getElementById('addList');
+            // Count current classes per subject
+            const counts = {};
+            tempClasses.forEach(c => counts[c.subj] = (counts[c.subj] || 0) + 1);
+            
+            list.innerHTML = SUBJECTS.map(s => {
+                const cnt = counts[s] || 0;
                 return `
                     <div class="flex items-center justify-between bg-dark-700 rounded-lg px-3 py-2">
                         <div>
-                            <span class="text-sm font-medium">${s}</span>
-                            <span class="text-[10px] text-gray-500 ml-1">${NAMES[s] || ''}</span>
+                            <span class="text-xs font-medium">${s}</span>
+                            <span class="text-[9px] text-gray-500 ml-1">${NAMES[s]}</span>
                         </div>
-                        <div class="flex gap-1">
-                            <button onclick="setStatus('${s}','present')" class="px-2 py-1 rounded text-[10px] font-medium transition-all ${st === 'present' ? 'btn-p text-white' : 'bg-dark-600 text-gray-400 hover:bg-dark-500'}">P</button>
-                            <button onclick="setStatus('${s}','absent')" class="px-2 py-1 rounded text-[10px] font-medium transition-all ${st === 'absent' ? 'btn-a text-white' : 'bg-dark-600 text-gray-400 hover:bg-dark-500'}">A</button>
-                            <button onclick="setStatus('${s}','cancelled')" class="px-2 py-1 rounded text-[10px] font-medium transition-all ${st === 'cancelled' ? 'btn-c text-white' : 'bg-dark-600 text-gray-400 hover:bg-dark-500'}">C</button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="removeOne('${s}')" class="w-6 h-6 rounded bg-dark-600 text-gray-400 hover:text-red-400 btn ${cnt === 0 ? 'opacity-30 pointer-events-none' : ''}">−</button>
+                            <span class="w-5 text-center text-xs font-semibold ${cnt > 0 ? 'text-blue-400' : 'text-gray-500'}">${cnt}</span>
+                            <button onclick="addOne('${s}')" class="w-6 h-6 rounded bg-dark-600 text-gray-400 hover:text-emerald-400 btn">+</button>
                         </div>
                     </div>
                 `;
             }).join('');
         }
         
-        function setStatus(s, st) {
-            selLog.entries[s] = st;
+        function addOne(s) { tempClasses.push({ subj: s, status: 'P' }); renderAddList(); }
+        function removeOne(s) {
+            const idx = tempClasses.findIndex(c => c.subj === s);
+            if (idx !== -1) { tempClasses.splice(idx, 1); renderAddList(); }
+        }
+        
+        function applyAdd() {
+            selClasses = tempClasses;
             dirty = true;
-            renderDayClasses();
-        }
-        
-        async function saveDay() {
-            if (!selDate || !selLog) return;
-            try {
-                await saveLog(selDate, selLog);
-                recalc();
-                await saveData();
-                render();
-                dirty = false;
-                toast('✓ Saved');
-            } catch (e) {
-                console.error(e);
-                toast('Error saving');
-            }
-        }
-        
-        function goToday() {
-            curMonth = new Date();
-            selectDay(today());
-            render();
+            closeAddClass();
+            renderDayList();
         }
 
         // =====================================================================
-        // ADD/EDIT CLASSES MODAL
+        // CALENDAR EVENTS
         // =====================================================================
-        function showAddClassModal() {
-            const modal = document.getElementById('addClassModal');
-            const list = document.getElementById('allSubjectsList');
-            const entries = selLog?.entries || {};
-            
-            list.innerHTML = Object.keys(LIMITS).map(s => {
-                const active = s in entries;
-                return `
-                    <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${active ? 'bg-blue-500/20' : 'bg-dark-700 hover:bg-dark-600'}">
-                        <input type="checkbox" ${active ? 'checked' : ''} data-subj="${s}" class="rounded bg-dark-600 border-dark-500 text-blue-500 focus:ring-blue-500 focus:ring-offset-0">
-                        <span class="text-xs">${s}</span>
-                    </label>
-                `;
-            }).join('');
-            
-            modal.classList.remove('hidden');
-        }
+        function openCal() { document.getElementById('modalCal').classList.remove('hidden'); renderEvList(); }
+        function closeCal() { document.getElementById('modalCal').classList.add('hidden'); }
+        function evTypeChg() { document.getElementById('evFollow').classList.toggle('hidden', document.getElementById('evType').value !== 'exchange'); }
         
-        function hideAddClassModal() {
-            document.getElementById('addClassModal').classList.add('hidden');
-        }
-        
-        function applyClassChanges() {
-            const checks = document.querySelectorAll('#allSubjectsList input[type="checkbox"]');
-            const newEntries = {};
-            
-            checks.forEach(ch => {
-                const s = ch.dataset.subj;
-                if (ch.checked) {
-                    newEntries[s] = selLog.entries[s] || 'present';
-                }
-            });
-            
-            selLog.entries = newEntries;
-            dirty = true;
-            hideAddClassModal();
-            renderDayClasses();
-        }
-
-        // =====================================================================
-        // CALENDAR EVENTS MODAL
-        // =====================================================================
-        function showCalendarModal() {
-            document.getElementById('calModal').classList.remove('hidden');
-            document.getElementById('evtType').onchange = () => {
-                document.getElementById('exchangeSelect').classList.toggle('hidden', document.getElementById('evtType').value !== 'exchange');
-            };
-            renderEvents();
-        }
-        
-        function hideCalendarModal() {
-            document.getElementById('calModal').classList.add('hidden');
-        }
-        
-        async function addEvent() {
-            const id = document.getElementById('evtDate').value;
-            const type = document.getElementById('evtType').value;
-            const name = document.getElementById('evtName').value.trim();
+        async function addEv() {
+            const id = document.getElementById('evDate').value, type = document.getElementById('evType').value, name = document.getElementById('evName').value.trim();
             if (!id || !name) { toast('Fill all fields'); return; }
-            
-            const evt = { type, name };
-            if (type === 'exchange') evt.followsDay = parseInt(document.getElementById('evtExchange').value);
-            
-            data.calendar[id] = evt;
+            const ev = { type, name };
+            if (type === 'exchange') ev.follows = parseInt(document.getElementById('evFollow').value);
+            data.cal[id] = ev;
             await saveData();
-            
+            // Update log if exists
             if (data.logs[id]) {
-                const sched = getSchedule(id);
-                const entries = {};
-                sched.subjects.forEach(s => entries[s] = data.logs[id].entries[s] || 'present');
-                data.logs[id].entries = entries;
+                const sched = getSched(id);
+                data.logs[id].classes = sched.subjs.map(s => {
+                    const old = data.logs[id].classes?.find(c => c.subj === s);
+                    return { subj: s, status: old?.status || 'P' };
+                });
                 await saveLog(id, data.logs[id]);
-                recalc();
-                await saveData();
+                recalc(); await saveData();
             }
-            
-            renderEvents();
-            render();
-            toast('Event added');
-            
-            document.getElementById('evtDate').value = '';
-            document.getElementById('evtName').value = '';
+            render(); renderEvList(); toast('Event added');
+            document.getElementById('evDate').value = ''; document.getElementById('evName').value = '';
         }
         
-        async function delEvent(id) {
-            delete data.calendar[id];
-            await saveData();
-            renderEvents();
-            render();
-            toast('Event removed');
-        }
+        async function delEv(id) { delete data.cal[id]; await saveData(); render(); renderEvList(); toast('Removed'); }
         
-        function renderEvents() {
-            const c = document.getElementById('eventsList');
-            const evts = Object.entries(data.calendar || {}).sort(([a], [b]) => a.localeCompare(b));
-            
-            if (!evts.length) {
-                c.innerHTML = '<p class="text-[10px] text-gray-500">No events</p>';
-                return;
-            }
-            
-            const colors = {
-                holiday: 'bg-red-500/20 text-red-300',
-                exam: 'bg-yellow-500/20 text-yellow-300',
-                exchange: 'bg-purple-500/20 text-purple-300',
-                halfday: 'bg-blue-500/20 text-blue-300'
-            };
-            
-            c.innerHTML = evts.map(([id, e]) => `
-                <div class="flex items-center justify-between p-2 bg-dark-700 rounded">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-[10px] px-1.5 py-0.5 rounded ${colors[e.type]}">${e.type}</span>
+        function renderEvList() {
+            const list = document.getElementById('evList');
+            const evs = Object.entries(data.cal || {}).sort(([a], [b]) => a.localeCompare(b));
+            if (!evs.length) { list.innerHTML = '<p class="text-[9px] text-gray-500">No events</p>'; return; }
+            const cols = { holiday: 'bg-red-500/20 text-red-300', exam: 'bg-amber-500/20 text-amber-300', exchange: 'bg-violet-500/20 text-violet-300', halfday: 'bg-blue-500/20 text-blue-300' };
+            list.innerHTML = evs.map(([id, e]) => `
+                <div class="flex items-center justify-between p-1.5 bg-dark-700 rounded">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="text-[8px] px-1.5 py-0.5 rounded ${cols[e.type]}">${e.type}</span>
                         <div class="min-w-0">
-                            <p class="text-xs font-medium truncate">${e.name}</p>
-                            <p class="text-[10px] text-gray-500">${shortDate(id)}</p>
+                            <p class="text-[10px] font-medium truncate">${e.name}</p>
+                            <p class="text-[8px] text-gray-500">${short(id)}</p>
                         </div>
                     </div>
-                    <button onclick="delEvent('${id}')" class="p-1 hover:bg-dark-600 rounded text-gray-500 hover:text-red-400 flex-shrink-0">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
+                    <button onclick="delEv('${id}')" class="p-1 hover:bg-dark-600 rounded text-gray-500 hover:text-red-400 btn"><svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
             `).join('');
         }
 
         // =====================================================================
-        // BULK ENTRY
+        // BULK
         // =====================================================================
-        function toggleBulk() {
-            const c = document.getElementById('bulkContent');
-            c.classList.toggle('hidden');
-            document.getElementById('bulkToggle').textContent = c.classList.contains('hidden') ? 'Show' : 'Hide';
-            if (!c.classList.contains('hidden')) updateBulkDates();
-        }
+        function toggleBulk() { const b = document.getElementById('bulkBox'); b.classList.toggle('hidden'); document.getElementById('bulkToggle').textContent = b.classList.contains('hidden') ? 'Show' : 'Hide'; updateBulk(); }
+        function showBulk() { document.getElementById('bulkBox').classList.remove('hidden'); document.getElementById('bulkToggle').textContent = 'Hide'; updateBulk(); document.getElementById('bulkBox').scrollIntoView({ behavior: 'smooth' }); }
         
-        function showBulk() {
-            document.getElementById('bulkContent').classList.remove('hidden');
-            document.getElementById('bulkToggle').textContent = 'Hide';
-            updateBulkDates();
-            document.getElementById('bulkContent').scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        function updateBulkDates() {
-            const c = document.getElementById('bulkDates');
-            const todayId = today();
-            const dates = [];
-            
+        function updateBulk() {
+            const list = document.getElementById('bulkList'), tid = today(), dates = [];
             const d = new Date();
-            for (let i = 1; i <= 30; i++) {
-                d.setDate(d.getDate() - 1);
-                const id = dateId(d);
-                if (data.logs[id]) continue;
-                const sched = getSchedule(id);
-                if (!sched.subjects.length) continue;
-                dates.push(id);
-            }
-            
-            if (!dates.length) {
-                c.innerHTML = '<p class="text-[10px] text-gray-500 col-span-3">All caught up! 🎉</p>';
-                return;
-            }
-            
-            bulkSel = new Set(dates);
-            c.innerHTML = dates.map(id => `
-                <label class="flex items-center gap-1.5 p-1.5 bg-dark-700 rounded text-[10px] cursor-pointer hover:bg-dark-600">
-                    <input type="checkbox" checked onchange="toggleBulk2('${id}')" class="rounded bg-dark-600 border-dark-500 text-blue-500 focus:ring-blue-500 w-3 h-3">
-                    <span>${shortDate(id)}</span>
+            for (let i = 1; i <= 30; i++) { d.setDate(d.getDate() - 1); const id = toId(d); if (data.logs[id] || !getSched(id).subjs.length) continue; dates.push(id); }
+            if (!dates.length) { list.innerHTML = '<span class="text-[9px] text-gray-500">All caught up! 🎉</span>'; return; }
+            bulkSet = new Set(dates);
+            list.innerHTML = dates.map(id => `
+                <label class="flex items-center gap-1 px-2 py-1 bg-dark-700 rounded text-[9px] cursor-pointer">
+                    <input type="checkbox" checked onchange="toggleBulkItem('${id}')" class="w-3 h-3 rounded bg-dark-600 border-dark-500 text-blue-500">
+                    <span>${short(id)}</span>
                 </label>
             `).join('');
         }
         
-        function toggleBulk2(id) {
-            bulkSel.has(id) ? bulkSel.delete(id) : bulkSel.add(id);
-        }
+        function toggleBulkItem(id) { bulkSet.has(id) ? bulkSet.delete(id) : bulkSet.add(id); }
         
-        async function bulkPresent() {
-            if (!bulkSel.size) { toast('None selected'); return; }
-            toast(`Logging ${bulkSel.size} days...`);
-            
-            for (const id of bulkSel) {
-                const sched = getSchedule(id);
-                const entries = {};
-                sched.subjects.forEach(s => entries[s] = 'present');
-                await saveLog(id, { date: id, entries });
+        async function bulkSave() {
+            if (!bulkSet.size) { toast('None selected'); return; }
+            toast(`Saving ${bulkSet.size}...`);
+            for (const id of bulkSet) {
+                const sched = getSched(id);
+                await saveLog(id, { date: id, classes: sched.subjs.map(s => ({ subj: s, status: 'P' })) });
             }
-            
-            recalc();
-            await saveData();
-            render();
-            toast(`✓ ${bulkSel.size} days logged`);
-            bulkSel.clear();
+            recalc(); await saveData(); render(); toast(`✓ ${bulkSet.size} saved`); bulkSet.clear();
         }
 
         // =====================================================================
         // RESET
         // =====================================================================
-        function showResetModal() { document.getElementById('resetModal').classList.remove('hidden'); }
-        function hideResetModal() { document.getElementById('resetModal').classList.add('hidden'); }
+        function openReset() { document.getElementById('modalReset').classList.remove('hidden'); }
+        function closeReset() { document.getElementById('modalReset').classList.add('hidden'); }
         
-        async function resetData() {
-            hideResetModal();
-            toast('Resetting...');
-            
-            const logs = await db.collection('attendance_users').doc(user.uid).collection('logs').get();
-            const batch = db.batch();
-            logs.forEach(d => batch.delete(d.ref));
-            await batch.commit();
-            
-            Object.keys(LIMITS).forEach(s => data.attendance[s] = { attended: 0, held: 0 });
-            data.logs = {};
-            await saveData();
-            
-            selectDay(today());
-            render();
-            toast('✓ Reset complete');
+        async function doReset() {
+            closeReset(); toast('Resetting...');
+            const logs = await db.collection('att_users').doc(user.uid).collection('logs').get();
+            const batch = db.batch(); logs.forEach(d => batch.delete(d.ref)); await batch.commit();
+            SUBJECTS.forEach(s => data.att[s] = { a: 0, h: 0 }); data.logs = {};
+            await saveData(); selectDay(today()); render(); toast('✓ Reset');
         }
 
         // =====================================================================
         // INIT
         // =====================================================================
-        function changeMonth(delta) {
-            curMonth.setMonth(curMonth.getMonth() + delta);
-            renderCal();
-        }
-        
+        const chgMonth = delta => { curMonth.setMonth(curMonth.getMonth() + delta); renderCal(); };
         window.onbeforeunload = e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } };
-        
-        console.log('%c🎓 Manipal Attendance v3', 'font-size:14px;font-weight:bold;color:#3b82f6;');
     </script>
 </body>
 </html>
