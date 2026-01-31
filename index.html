@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#08080c">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Manipal Attendance Pro</title>
+    <title>College Attendance Tracker</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -17,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Manipal%20Attendance%20Pro%22%2C%22short_name%22%3A%22Attendance%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2308080c%22%2C%22theme_color%22%3A%22%2308080c%22%7D">
+    <link rel="manifest" href="data:application/json,%7B%22name%22%3A%22College%20Attendance%20Tracker%22%2C%22short_name%22%3A%22Attendance%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2308080c%22%2C%22theme_color%22%3A%22%2308080c%22%7D">
     
     <script>
         tailwind.config = {
@@ -138,8 +138,8 @@
                 <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-xl">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
                 </div>
-                <h1 class="font-bold text-xl bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">Manipal Attendance Pro</h1>
-                <p class="text-[11px] text-gray-500 mt-1">Batch D2 • Advanced Tracker v3.0</p>
+                <h1 class="font-bold text-xl bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-transparent">College Attendance Tracker</h1>
+                <p class="text-[11px] text-gray-500 mt-1">Track Your Academic Success</p>
             </div>
             
             <div class="flex mb-4 bg-dark-700 rounded-xl p-1 text-xs relative">
@@ -193,7 +193,7 @@
                         <span class="text-sm font-bold" id="hdrAvatar">?</span>
                     </button>
                     <div class="leading-tight">
-                        <p class="text-sm font-semibold">Attendance Pro</p>
+                        <p class="text-sm font-semibold">Attendance Tracker</p>
                         <p class="text-[10px] text-gray-500" id="hdrUser"></p>
                     </div>
                 </div>
@@ -217,7 +217,21 @@
                 </div>
             </div>
         </header>
-        
+
+        <!-- Quick Stats Bar -->
+        <div id="quickStatsBar" class="bg-dark-800 border-b border-white/5 py-2 px-3">
+            <div class="max-w-lg mx-auto flex items-center justify-between text-[10px]">
+                <div class="flex items-center gap-3">
+                    <span class="text-gray-400">Overall: <span id="qsOverall" class="font-bold text-blue-400">--%</span></span>
+                    <span class="text-gray-400">Target: <span id="qsTarget" class="font-medium text-violet-400">75%</span></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="qsStatus" class="badge badge-success">Safe</span>
+                    <span id="qsCritical" class="text-gray-500"></span>
+                </div>
+            </div>
+        </div>
+
         <main class="max-w-lg mx-auto p-3 space-y-3">
             
             <!-- Today's Quick Entry -->
@@ -352,6 +366,19 @@
                 </div>
             </div>
 
+            <!-- Weekly Trend -->
+            <div class="glass rounded-2xl p-3 glass-hover">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-semibold flex items-center gap-1">
+                        📈 Weekly Trend
+                        <span id="trendIndicator" class="badge badge-info"></span>
+                    </h3>
+                    <span class="text-[10px] text-gray-500" id="weeklyAvg"></span>
+                </div>
+                <div id="weeklyTrend" class="flex items-end justify-between gap-1 h-16"></div>
+                <div class="flex justify-between text-[8px] text-gray-600 mt-1" id="weeklyLabels"></div>
+            </div>
+
             <!-- Insights -->
             <div class="glass rounded-2xl p-3 glass-hover">
                 <div class="flex items-center justify-between mb-2">
@@ -381,7 +408,7 @@
                         </div>
                     </div>
                     <div class="bg-dark-700 rounded-xl p-2.5">
-                        <p class="text-[9px] text-gray-500 mb-1">Critical Subjects (< 75%)</p>
+                        <p class="text-[9px] text-gray-500 mb-1">Critical Subjects (below target)</p>
                         <div id="iCritical" class="text-[10px]"></div>
                     </div>
                     <div class="bg-dark-700 rounded-xl p-2.5">
@@ -544,6 +571,11 @@
         <div id="saveIndicator" class="hidden fixed top-16 right-4 z-30 px-4 py-2 rounded-xl bg-emerald-500 text-white text-[11px] font-medium shadow-lg shadow-emerald-500/25">
             ✓ Saved
         </div>
+
+        <!-- Footer -->
+        <footer class="mt-8 pb-6 text-center">
+            <p class="text-[11px] text-gray-600">Arnav Dugad &copy; <span id="footerYear"></span></p>
+        </footer>
     </div>
 
     <!-- ==================== MODALS ==================== -->
@@ -560,7 +592,7 @@
                 <div class="w-20 h-20 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-2xl font-bold shadow-xl" id="profileAvatar">?</div>
                 <h4 class="font-semibold" id="profileName">-</h4>
                 <p class="text-[11px] text-gray-500" id="profileEmail">-</p>
-                <p class="text-[10px] text-gray-600 mt-1">Batch D2 • Member since <span id="profileJoined">-</span></p>
+                <p class="text-[10px] text-gray-600 mt-1">Member since <span id="profileJoined">-</span></p>
             </div>
             
             <div class="grid grid-cols-3 gap-2 mb-4">
@@ -842,6 +874,16 @@
             
             <div class="space-y-3">
                 <div class="bg-dark-700 rounded-xl p-3">
+                    <p class="text-[10px] font-medium mb-2">Target Attendance</p>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="targetPct" min="50" max="100" value="75" class="flex-1 px-3 py-2 bg-dark-600 border border-dark-500 rounded-lg text-[11px] focus:outline-none focus:border-blue-500">
+                        <span class="text-[10px] text-gray-400">%</span>
+                        <button onclick="saveTargetPct()" class="px-3 py-2 rounded-lg bg-blue-500 text-[10px] font-medium btn">Save</button>
+                    </div>
+                    <p class="text-[9px] text-gray-500 mt-1">Default: 75%. Used for calculations and alerts.</p>
+                </div>
+
+                <div class="bg-dark-700 rounded-xl p-3">
                     <p class="text-[10px] font-medium mb-2">Semester Dates</p>
                     <div class="space-y-2">
                         <div>
@@ -982,7 +1024,7 @@
         // =====================================================================
         // STATE
         // =====================================================================
-        let user = null, data = { att: {}, logs: {}, cal: {}, semStart: null, semEnd: null, notes: {}, bestStreak: 0 };
+        let user = null, data = { att: {}, logs: {}, cal: {}, semStart: null, semEnd: null, notes: {}, bestStreak: 0, targetPct: 75 };
         let selDate = null, selClasses = [];
         let curMonth = new Date(), subjExp = false, dirty = false, bulkSet = new Set();
         let tempClasses = [];
@@ -1084,19 +1126,21 @@
             if (!data.semEnd) data.semEnd = null;
             if (!data.notes) data.notes = {};
             if (!data.bestStreak) data.bestStreak = 0;
+            if (!data.targetPct) data.targetPct = 75;
             const logs = await db.collection('att_users').doc(user.uid).collection('logs').get();
             data.logs = {}; logs.forEach(d => data.logs[d.id] = d.data());
             updateStreak();
         }
         
         const saveData = async () => {
-            await db.collection('att_users').doc(user.uid).update({ 
-                att: data.att, 
+            await db.collection('att_users').doc(user.uid).update({
+                att: data.att,
                 cal: data.cal,
                 semStart: data.semStart,
                 semEnd: data.semEnd,
                 notes: data.notes,
-                bestStreak: data.bestStreak || 0
+                bestStreak: data.bestStreak || 0,
+                targetPct: data.targetPct || 75
             });
             showSaveIndicator();
         };
@@ -1120,8 +1164,14 @@
                 if (id > today()) continue;
                 const log = data.logs[id];
                 if (!log.classes || !log.classes.length) break;
-                const allP = log.classes.every(c => c.status === 'P' || c.status === 'C');
-                if (allP) streak++; else break;
+                // Check if any class was absent - breaks streak
+                const hasAbsent = log.classes.some(c => c.status === 'A');
+                if (hasAbsent) break;
+                // Check if at least one class was attended (not just all cancelled)
+                const hasPresent = log.classes.some(c => c.status === 'P');
+                // Only count toward streak if actually attended at least one class
+                if (hasPresent) streak++;
+                // Days with only cancelled classes don't break streak but don't add to it either
             }
             if (streak > (data.bestStreak || 0)) {
                 data.bestStreak = streak;
@@ -1153,7 +1203,7 @@
                 if (d.h === 0) return;
                 const pct = d.a / d.h * 100;
                 if (pct < 70) alerts.push({ type: 'danger', msg: `${s} is at ${Math.round(pct)}% - Critical!` });
-                else if (pct < 75) alerts.push({ type: 'warning', msg: `${s} is at ${Math.round(pct)}% - Be careful` });
+                else if (pct < (data.targetPct || 75)) alerts.push({ type: 'warning', msg: `${s} is at ${Math.round(pct)}% - Below ${data.targetPct || 75}% target` });
             });
             
             const box = document.getElementById('alertsBox');
@@ -1175,15 +1225,16 @@
         // =====================================================================
         // RENDER
         // =====================================================================
-        function render() { 
-            renderCal(); 
-            renderStats(); 
-            renderSubj(); 
-            renderInsights(); 
+        function render() {
+            renderCal();
+            renderStats();
+            renderSubj();
+            renderInsights();
             renderToday();
             renderSemesterProgress();
-            updateBulk(); 
-            checkAlerts(); 
+            renderWeeklyTrend();
+            updateBulk();
+            checkAlerts();
             checkAchievements();
         }
 
@@ -1274,7 +1325,69 @@
             document.getElementById('semEndText').textContent = short(data.semEnd);
             document.getElementById('semPctText').textContent = progress + '%';
         }
-        
+
+        function renderWeeklyTrend() {
+            const container = document.getElementById('weeklyTrend');
+            const labels = document.getElementById('weeklyLabels');
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const target = data.targetPct || 75;
+            const days = [];
+            let totalA = 0, totalH = 0;
+
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const id = toId(d);
+                const log = data.logs[id];
+                let a = 0, h = 0;
+                if (log && log.classes) {
+                    log.classes.forEach(c => {
+                        if (c.status === 'P') { a++; h++; }
+                        else if (c.status === 'A') h++;
+                    });
+                }
+                totalA += a;
+                totalH += h;
+                days.push({ id, a, h, pct: h > 0 ? (a / h * 100) : null, day: dayNames[d.getDay()] });
+            }
+
+            const avgPct = totalH > 0 ? Math.round(totalA / totalH * 100) : 0;
+            document.getElementById('weeklyAvg').textContent = totalH > 0 ? `Avg: ${avgPct}%` : 'No data';
+
+            // Calculate trend (comparing first half to second half)
+            const firstHalf = days.slice(0, 3).filter(d => d.pct !== null);
+            const secondHalf = days.slice(4).filter(d => d.pct !== null);
+            const firstAvg = firstHalf.length ? firstHalf.reduce((s, d) => s + d.pct, 0) / firstHalf.length : 0;
+            const secondAvg = secondHalf.length ? secondHalf.reduce((s, d) => s + d.pct, 0) / secondHalf.length : 0;
+            const trendEl = document.getElementById('trendIndicator');
+            if (secondAvg > firstAvg + 5) {
+                trendEl.textContent = '↑ Up';
+                trendEl.className = 'badge badge-success';
+            } else if (secondAvg < firstAvg - 5) {
+                trendEl.textContent = '↓ Down';
+                trendEl.className = 'badge badge-danger';
+            } else {
+                trendEl.textContent = '→ Stable';
+                trendEl.className = 'badge badge-info';
+            }
+
+            container.innerHTML = days.map(d => {
+                if (d.pct === null) {
+                    return `<div class="flex-1 flex flex-col items-center">
+                        <div class="w-full h-full bg-dark-600 rounded-t" style="min-height:4px"></div>
+                    </div>`;
+                }
+                const height = Math.max(10, d.pct);
+                const color = d.pct >= target ? 'bg-emerald-500' : d.pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
+                return `<div class="flex-1 flex flex-col items-center justify-end has-tooltip">
+                    <div class="${color} w-full rounded-t transition-all" style="height:${height}%"></div>
+                    <span class="tooltip">${short(d.id)}: ${Math.round(d.pct)}% (${d.a}/${d.h})</span>
+                </div>`;
+            }).join('');
+
+            labels.innerHTML = days.map(d => `<span class="flex-1 text-center">${d.day}</span>`).join('');
+        }
+
         function renderCal() {
             const g = document.getElementById('calGrid'), y = curMonth.getFullYear(), m = curMonth.getMonth();
             document.getElementById('calTitle').textContent = curMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -1325,17 +1438,47 @@
             let a = 0, h = 0, lim = 0;
             SUBJECTS.forEach(s => { const d = data.att[s] || { a: 0, h: 0 }; a += d.a; h += d.h; lim += LIMITS[s]; });
             const pct = h ? Math.round(a / h * 100) : 100;
-            
+            const target = data.targetPct || 75;
+
             document.getElementById('ringPct').textContent = pct + '%';
             document.getElementById('sA').textContent = a;
             document.getElementById('sH').textContent = h;
             document.getElementById('sMissed').textContent = h - a;
             document.getElementById('sS').textContent = Math.round(h / lim * 100) + '%';
-            
+
             // Update ring
             const circumference = 2 * Math.PI * 35;
             const offset = circumference - (pct / 100) * circumference;
             document.getElementById('mainRing').style.strokeDashoffset = offset;
+
+            // Update quick stats bar
+            document.getElementById('qsOverall').textContent = pct + '%';
+            document.getElementById('qsTarget').textContent = target + '%';
+
+            // Count critical subjects
+            const criticalCount = SUBJECTS.filter(s => {
+                const d = data.att[s] || { a: 0, h: 0 };
+                return d.h > 0 && (d.a / d.h * 100) < target;
+            }).length;
+
+            const qsStatus = document.getElementById('qsStatus');
+            const qsCritical = document.getElementById('qsCritical');
+
+            if (pct >= target) {
+                qsStatus.textContent = 'Safe';
+                qsStatus.className = 'badge badge-success';
+            } else {
+                qsStatus.textContent = 'At Risk';
+                qsStatus.className = 'badge badge-danger';
+            }
+
+            if (criticalCount > 0) {
+                qsCritical.textContent = `${criticalCount} critical`;
+                qsCritical.className = 'text-red-400';
+            } else {
+                qsCritical.textContent = 'All good';
+                qsCritical.className = 'text-emerald-400';
+            }
         }
         
         function renderSubj() {
@@ -1357,8 +1500,9 @@
                 sorted.sort((a, b) => {
                     const pctA = data.att[a]?.h ? data.att[a].a / data.att[a].h : 1;
                     const pctB = data.att[b]?.h ? data.att[b].a / data.att[b].h : 1;
-                    const critA = pctA < 0.75 ? 1 : 0;
-                    const critB = pctB < 0.75 ? 1 : 0;
+                    const target = (data.targetPct || 75) / 100;
+                    const critA = pctA < target ? 1 : 0;
+                    const critB = pctB < target ? 1 : 0;
                     return critB - critA || pctA - pctB;
                 });
             }
@@ -1366,10 +1510,12 @@
             g.innerHTML = sorted.map(s => {
                 const d = data.att[s] || { a: 0, h: 0 }, pct = d.h ? d.a / d.h * 100 : 100, isLab = LABS.includes(s);
                 let status, stCls;
-                if (pct >= 75) { const b = Math.floor((d.a - 0.75 * d.h) / 0.75); status = b > 0 ? `+${b}` : '0'; stCls = 'text-emerald-400'; }
-                else { const n = Math.ceil((0.75 * d.h - d.a) / 0.25); status = `-${n}`; stCls = 'text-red-400'; }
-                const border = pct >= 75 ? 'border-emerald-500/20' : 'border-red-500/25';
-                const prog = pct >= 75 ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500';
+                const target = data.targetPct || 75;
+                const targetDec = target / 100;
+                if (pct >= target) { const b = Math.floor((d.a - targetDec * d.h) / targetDec); status = b > 0 ? `+${b}` : '0'; stCls = 'text-emerald-400'; }
+                else { const n = Math.ceil((targetDec * d.h - d.a) / (1 - targetDec)); status = `-${n}`; stCls = 'text-red-400'; }
+                const border = pct >= target ? 'border-emerald-500/20' : 'border-red-500/25';
+                const prog = pct >= target ? 'bg-emerald-500' : pct >= 60 ? 'bg-amber-500' : 'bg-red-500';
                 
                 if (!subjExp) return `
                     <div class="glass glass-hover rounded-xl p-2.5 border ${border} cursor-pointer" onclick="openSubjDet('${s}')">
@@ -1378,18 +1524,18 @@
                                 <span class="text-[11px] font-semibold">${s}</span>
                                 ${isLab ? '<span class="badge badge-purple">LAB</span>' : ''}
                             </div>
-                            <span class="text-sm font-bold ${pct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${Math.round(pct)}%</span>
+                            <span class="text-sm font-bold ${pct >= target ? 'text-emerald-400' : 'text-red-400'}">${Math.round(pct)}%</span>
                         </div>
                         <div class="relative h-1.5 bg-dark-600 rounded-full overflow-hidden mb-1.5">
                             <div class="${prog} h-full transition-all" style="width:${Math.min(pct,100)}%"></div>
-                            <div class="absolute h-full w-0.5 bg-white/20" style="left:75%"></div>
+                            <div class="absolute h-full w-0.5 bg-white/20" style="left:${target}%"></div>
                         </div>
                         <div class="flex justify-between text-[9px] text-gray-500">
                             <span>${d.a}/${d.h}</span>
                             <span class="${stCls} font-medium">${status}</span>
                         </div>
                     </div>`;
-                
+
                 return `
                     <div class="glass glass-hover rounded-xl p-3 border ${border} cursor-pointer" onclick="openSubjDet('${s}')">
                         <div class="flex justify-between items-start mb-2">
@@ -1400,15 +1546,15 @@
                                 </div>
                                 <p class="text-[9px] text-gray-500 truncate max-w-[100px]">${NAMES[s]}</p>
                             </div>
-                            <span class="text-lg font-bold ${pct >= 75 ? 'text-emerald-400' : 'text-red-400'}">${Math.round(pct)}%</span>
+                            <span class="text-lg font-bold ${pct >= target ? 'text-emerald-400' : 'text-red-400'}">${Math.round(pct)}%</span>
                         </div>
                         <div class="relative h-1.5 bg-dark-600 rounded-full overflow-hidden mb-2">
                             <div class="${prog} h-full transition-all" style="width:${Math.min(pct,100)}%"></div>
-                            <div class="absolute h-full w-0.5 bg-white/20" style="left:75%"></div>
+                            <div class="absolute h-full w-0.5 bg-white/20" style="left:${target}%"></div>
                         </div>
                         <div class="flex justify-between text-[9px]">
                             <span class="text-gray-500">${d.a}/${d.h} • ${d.h}/${LIMITS[s]}</span>
-                            <span class="${stCls} font-medium">${pct >= 75 ? `Bunk ${status.replace('+','')}` : `Need ${status.replace('-','')}`}</span>
+                            <span class="${stCls} font-medium">${pct >= target ? `Bunk ${status.replace('+','')}` : `Need ${status.replace('-','')}`}</span>
                         </div>
                     </div>`;
             }).join('');
@@ -1459,17 +1605,18 @@
             document.getElementById('iBestDay').textContent = bestDay;
 
             // Critical subjects
+            const targetPct = data.targetPct || 75;
             const critical = SUBJECTS.filter(s => {
                 const d = data.att[s] || { a: 0, h: 0 };
-                return d.h > 0 && (d.a / d.h * 100) < 75;
+                return d.h > 0 && (d.a / d.h * 100) < targetPct;
             });
-            document.getElementById('iCritical').innerHTML = critical.length 
+            document.getElementById('iCritical').innerHTML = critical.length
                 ? critical.map(s => {
                     const d = data.att[s];
                     const pct = Math.round(d.a / d.h * 100);
                     return `<span class="badge badge-danger">${s} ${pct}%</span>`;
                 }).join(' ')
-                : '<span class="badge badge-success">All subjects above 75%! 🎉</span>';
+                : `<span class="badge badge-success">All subjects above ${targetPct}%! 🎉</span>`;
 
             // This week
             const now = new Date();
@@ -1893,20 +2040,22 @@
         
         function renderBunkCalc() {
             const box = document.getElementById('bunkCalc');
+            const target = data.targetPct || 75;
+            const targetDec = target / 100;
             const results = SUBJECTS.map(s => {
                 const d = data.att[s] || { a: 0, h: 0 };
                 if (d.h === 0) return null;
                 const pct = d.a / d.h * 100;
-                if (pct < 75) return null;
-                const canBunk = Math.floor((d.a - 0.75 * d.h) / 0.75);
+                if (pct < target) return null;
+                const canBunk = Math.floor((d.a - targetDec * d.h) / targetDec);
                 return { subj: s, canBunk, pct: pct.toFixed(1) };
             }).filter(Boolean);
-            
+
             if (results.length === 0) {
-                box.innerHTML = '<p class="text-[10px] text-gray-500">No subjects eligible for bunking</p>';
+                box.innerHTML = `<p class="text-[10px] text-gray-500">No subjects above ${target}% eligible for bunking</p>`;
                 return;
             }
-            
+
             box.innerHTML = results.map(r => `
                 <div class="flex justify-between items-center text-[10px] py-1.5 border-b border-dark-600 last:border-0">
                     <span class="text-gray-400">${r.subj} <span class="text-gray-600">(${r.pct}%)</span></span>
@@ -1962,27 +2111,29 @@
 
         function renderWhatIfScenarios() {
             const box = document.getElementById('wifScenarios');
+            const target = data.targetPct || 75;
+            const targetDec = target / 100;
             const critical = SUBJECTS.filter(s => {
                 const d = data.att[s] || { a: 0, h: 0 };
-                return d.h > 0 && (d.a / d.h * 100) < 75;
+                return d.h > 0 && (d.a / d.h * 100) < target;
             });
-            
+
             if (!critical.length) {
-                box.innerHTML = '<p class="text-[10px] text-emerald-400">All subjects are above 75%! 🎉</p>';
+                box.innerHTML = `<p class="text-[10px] text-emerald-400">All subjects are above ${target}%! 🎉</p>`;
                 return;
             }
-            
+
             box.innerHTML = critical.map(s => {
                 const d = data.att[s];
                 const pct = (d.a / d.h * 100).toFixed(1);
-                const need = Math.ceil((0.75 * d.h - d.a) / 0.25);
+                const need = Math.ceil((targetDec * d.h - d.a) / (1 - targetDec));
                 return `
                     <div class="bg-dark-600 rounded-lg p-2 text-[10px]">
                         <div class="flex justify-between mb-1">
                             <span class="font-medium">${s}</span>
                             <span class="text-red-400">${pct}%</span>
                         </div>
-                        <p class="text-gray-500">Need ${need} consecutive to reach 75%</p>
+                        <p class="text-gray-500">Need ${need} consecutive to reach ${target}%</p>
                     </div>
                 `;
             }).join('');
@@ -2024,10 +2175,11 @@
                     date.setDate(date.getDate() - (w * 7 + (6 - d)));
                     const id = toId(date);
                     const val = data_map[id];
+                    const targetDec = (data.targetPct || 75) / 100;
                     let color = 'bg-gray-800';
                     if (val !== undefined) {
                         if (val >= 0.9) color = 'bg-emerald-500';
-                        else if (val >= 0.75) color = 'bg-emerald-500/70';
+                        else if (val >= targetDec) color = 'bg-emerald-500/70';
                         else if (val >= 0.5) color = 'bg-amber-500/60';
                         else color = 'bg-red-500/40';
                     }
@@ -2241,9 +2393,21 @@
         function openSettings() {
             document.getElementById('semStart').value = data.semStart || '';
             document.getElementById('semEnd').value = data.semEnd || '';
+            document.getElementById('targetPct').value = data.targetPct || 75;
             document.getElementById('modalSettings').classList.remove('hidden');
         }
         function closeSettings() { document.getElementById('modalSettings').classList.add('hidden'); }
+
+        async function saveTargetPct() {
+            const val = parseInt(document.getElementById('targetPct').value) || 75;
+            data.targetPct = Math.max(50, Math.min(100, val));
+            document.getElementById('targetPct').value = data.targetPct;
+            showLoading('Saving...');
+            await saveData();
+            render();
+            hideLoading();
+            toast(`✓ Target set to ${data.targetPct}%`);
+        }
 
         async function saveSemDates() {
             showLoading('Saving...');
@@ -2257,7 +2421,7 @@
 
         async function backupData() {
             const backup = {
-                version: '3.0',
+                version: '3.1',
                 timestamp: new Date().toISOString(),
                 data: {
                     att: data.att,
@@ -2266,7 +2430,8 @@
                     notes: data.notes,
                     semStart: data.semStart,
                     semEnd: data.semEnd,
-                    bestStreak: data.bestStreak
+                    bestStreak: data.bestStreak,
+                    targetPct: data.targetPct
                 }
             };
             
@@ -2276,7 +2441,7 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `manipal-attendance-backup-${today()}.json`;
+            a.download = `attendance-backup-${today()}.json`;
             a.click();
             toast('✓ Backup downloaded');
             checkAchievements();
@@ -2304,6 +2469,7 @@
                 data.semStart = backup.data.semStart || data.semStart;
                 data.semEnd = backup.data.semEnd || data.semEnd;
                 data.bestStreak = backup.data.bestStreak || data.bestStreak;
+                data.targetPct = backup.data.targetPct || data.targetPct || 75;
                 
                 // Restore logs
                 if (backup.data.logs) {
@@ -2312,6 +2478,8 @@
                     }
                 }
                 
+                recalc();
+                updateStreak();
                 await saveData();
                 render();
                 hideLoading();
@@ -2348,8 +2516,8 @@
 
         function exportReport() {
             let report = `═══════════════════════════════════════════\n`;
-            report += `  MANIPAL ATTENDANCE REPORT\n`;
-            report += `  Batch D2 • ${new Date().toLocaleDateString()}\n`;
+            report += `  ATTENDANCE REPORT\n`;
+            report += `  ${new Date().toLocaleDateString()}\n`;
             report += `═══════════════════════════════════════════\n\n`;
             
             let totalA = 0, totalH = 0;
@@ -2370,7 +2538,7 @@
             });
 
             report += `\n─────────────────────────────────────────\n`;
-            report += `Generated by Manipal Attendance Pro v3.0\n`;
+            report += `Generated by College Attendance Tracker\n`;
 
             downloadFile(report, `attendance-report-${today()}.txt`, 'text/plain');
             toast('✓ Report exported');
@@ -2417,14 +2585,14 @@
                     <div style="text-align: center; margin-bottom: 16px;">
                         <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 12px; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px;">${name.charAt(0).toUpperCase()}</div>
                         <div style="font-weight: 600;">${name}</div>
-                        <div style="font-size: 10px; color: #9ca3af;">Batch D2 • Manipal</div>
+                        <div style="font-size: 10px; color: #9ca3af;">College Attendance Tracker</div>
                     </div>
                     <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 16px; text-align: center;">
                         <div style="font-size: 36px; font-weight: 800; background: linear-gradient(135deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${pct}%</div>
                         <div style="font-size: 11px; color: #9ca3af;">Overall Attendance</div>
                         <div style="margin-top: 8px; font-size: 10px; color: #6b7280;">${totalA}/${totalH} classes</div>
                     </div>
-                    <div style="margin-top: 12px; font-size: 8px; color: #4b5563; text-align: center;">Generated by Manipal Attendance Pro</div>
+                    <div style="margin-top: 12px; font-size: 8px; color: #4b5563; text-align: center;">Generated by College Attendance Tracker</div>
                 </div>
             `;
             
@@ -2451,15 +2619,23 @@
         function toggleBulk() { const b = document.getElementById('bulkBox'); b.classList.toggle('hidden'); document.getElementById('bulkToggle').textContent = b.classList.contains('hidden') ? 'Show' : 'Hide'; updateBulk(); }
         function showBulk() { document.getElementById('bulkBox').classList.remove('hidden'); document.getElementById('bulkToggle').textContent = 'Hide'; updateBulk(); document.getElementById('bulkBox').scrollIntoView({ behavior: 'smooth' }); }
         
-        function updateBulk() {
+        function updateBulk(forceRefresh = false) {
             const list = document.getElementById('bulkList'), tid = today(), dates = [];
             const d = new Date();
             for (let i = 1; i <= 30; i++) { d.setDate(d.getDate() - 1); const id = toId(d); if (data.logs[id] || !getSched(id).subjs.length) continue; dates.push(id); }
-            if (!dates.length) { list.innerHTML = '<span class="badge badge-success">All caught up! 🎉</span>'; return; }
-            bulkSet = new Set(dates);
+            if (!dates.length) { list.innerHTML = '<span class="badge badge-success">All caught up! 🎉</span>'; bulkSet.clear(); return; }
+            // Only reset bulkSet if forced or if it's empty (preserve user selections)
+            if (forceRefresh || bulkSet.size === 0) {
+                bulkSet = new Set(dates);
+            } else {
+                // Remove dates that are no longer unlogged
+                for (const id of bulkSet) {
+                    if (!dates.includes(id)) bulkSet.delete(id);
+                }
+            }
             list.innerHTML = dates.map(id => `
                 <label class="flex items-center gap-1.5 px-2.5 py-2 bg-dark-700 hover:bg-dark-600 rounded-lg text-[10px] cursor-pointer transition-colors">
-                    <input type="checkbox" checked onchange="toggleBulkItem('${id}')" class="w-4 h-4 rounded bg-dark-600 border-dark-500 text-blue-500 focus:ring-blue-500">
+                    <input type="checkbox" ${bulkSet.has(id) ? 'checked' : ''} onchange="toggleBulkItem('${id}')" class="w-4 h-4 rounded bg-dark-600 border-dark-500 text-blue-500 focus:ring-blue-500">
                     <span>${short(id)}</span>
                 </label>
             `).join('');
@@ -2547,6 +2723,12 @@
         // =====================================================================
         const chgMonth = delta => { curMonth.setMonth(curMonth.getMonth() + delta); renderCal(); };
         window.onbeforeunload = e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } };
+
+        // Set footer year
+        document.addEventListener('DOMContentLoaded', () => {
+            const footerYear = document.getElementById('footerYear');
+            if (footerYear) footerYear.textContent = new Date().getFullYear();
+        });
 
         // Service Worker for PWA (basic)
         if ('serviceWorker' in navigator) {
